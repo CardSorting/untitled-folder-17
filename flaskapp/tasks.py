@@ -1,22 +1,22 @@
 import os
-from flask import current_app
-from .rq_app import q
+from flask import current_app, Flask
 from datetime import datetime
 import google.generativeai as genai
-
-# Configure Google Generative AI
-genai.configure(api_key=os.environ.get('GOOGLE_API_KEY'))
-model = genai.GenerativeModel('gemini-exp-1206')
+from flaskapp.utils.firebase import initialize_firebase
+import threading
 
 
-def process_companion_chat(user_message, user_id, request_id):
-    """Process chat message with Gemini AI"""
+def _process_companion_chat_sync(user_message, user_id, request_id):
+    """Process chat message with Gemini AI synchronously"""
     from flask import Flask
     try:
         # Create a Flask app context
         flask_app = Flask(__name__)
         flask_app.config.from_object(os.environ.get('FLASK_CONFIG', 'flaskapp.config.Config'))
         with flask_app.app_context():
+            initialize_firebase(flask_app.config)
+            genai.configure(api_key=os.environ.get('GOOGLE_API_KEY'))
+            model = genai.GenerativeModel('gemini-exp-1206')
             # Generate response with system prompt and user message
             chat = model.start_chat(history=[])
             response = chat.send_message(
@@ -35,7 +35,7 @@ Keep your responses concise, deeply empathetic, and focused on the user's immedi
                 User message: {user_message}"""
             )
             from flaskapp.models.user import User
-            user = User.get_user_by_firebase_uid(user_id)
+            user = User.get_by_firebase_uid(user_id)
             if user:
                 user.save_message(user_message, response.text, request_id)
             
@@ -54,3 +54,15 @@ Keep your responses concise, deeply empathetic, and focused on the user's immedi
             'error': str(exc),
             'request_id': request_id
         }
+
+
+def process_companion_chat(user_message, user_id, request_id):
+    """Process chat message with Gemini AI in a thread"""
+    thread = threading.Thread(target=_process_companion_chat_sync, args=(user_message, user_id, request_id))
+    thread.start()
+    return {
+        'success': True,
+        'message': 'Chat processing started in background',
+        'request_id': request_id,
+        'user_message': user_message
+    }

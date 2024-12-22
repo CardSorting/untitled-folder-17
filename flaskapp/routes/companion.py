@@ -39,14 +39,9 @@ def chat():
 
         # Start async chat task
         from ..tasks import process_companion_chat
-        from ..rq_app import q
-        task = q.enqueue(process_companion_chat, user_message, current_user.firebase_uid, request_id)
+        result = process_companion_chat(user_message, current_user.firebase_uid, request_id)
         
-        return jsonify({
-            'message': 'Task enqueued',
-            'request_id': request_id,
-            'task_id': task.id
-        })
+        return jsonify(result)
 
     except Exception as e:
         current_app.logger.error(f"Error in chat endpoint: {str(e)}")
