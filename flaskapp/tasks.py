@@ -3,10 +3,7 @@ from flask import current_app, Flask
 from datetime import datetime
 import google.generativeai as genai
 from flaskapp.utils.firebase import initialize_firebase
-import threading
-
-
-def _process_companion_chat_sync(user_message, user_id, request_id):
+def process_companion_chat(user_message, user_id, request_id):
     """Process chat message with Gemini AI synchronously"""
     from flask import Flask
     try:
@@ -54,15 +51,3 @@ Keep your responses concise, deeply empathetic, and focused on the user's immedi
             'error': str(exc),
             'request_id': request_id
         }
-
-
-def process_companion_chat(user_message, user_id, request_id):
-    """Process chat message with Gemini AI in a thread"""
-    thread = threading.Thread(target=_process_companion_chat_sync, args=(user_message, user_id, request_id))
-    thread.start()
-    return {
-        'success': True,
-        'message': 'Chat processing started in background',
-        'request_id': request_id,
-        'user_message': user_message
-    }

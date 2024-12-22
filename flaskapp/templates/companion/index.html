@@ -280,7 +280,7 @@ function addMessage(message, type) {
         `}
         <div class="${type === 'user' ? 'mr-3' : 'ml-3'}">
             <div class="${type === 'user' ? 'bg-primary-600 text-white' : 'bg-white'} rounded-lg shadow-sm p-4 max-w-lg">
-                <p class="${type === 'user' ? 'text-white' : 'text-gray-900'}">${message}</p>
+                <p class="${type === 'user' ? 'text-white' : 'text-gray-900'}">${type === 'user' ? message : message.message}</p>
             </div>
         </div>
     `;
