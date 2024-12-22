@@ -91,45 +91,78 @@ def get_chat_history():
 @companion_bp.route('/upload-audio', methods=['POST'])
 @login_required
 def upload_audio():
-    """Handle audio upload to Backblaze B2."""
+    """Handle audio upload to Backblaze B2 using Celery."""
     try:
+        from ..tasks import process_audio_upload
+        
         data = request.json
         audio_data = data.get('audio')
+        request_id = data.get('request_id')
         
         if not audio_data:
             return jsonify({'error': 'No audio data provided'}), 400
-            
-        # Decode base64 audio data
-        try:
-            # Remove data URL prefix if present
-            if 'base64,' in audio_data:
-                audio_data = audio_data.split('base64,')[1]
-            audio_bytes = base64.b64decode(audio_data)
-        except Exception as e:
-            return jsonify({'error': 'Invalid audio data format'}), 400
-
-        # Upload to Backblaze B2
-        result = b2_client.upload_audio(audio_bytes, current_user.firebase_uid)
         
-        if not result['success']:
-            raise Exception(result.get('error', 'Upload failed'))
+        if not request_id:
+            return jsonify({'error': 'No request ID provided'}), 400
 
-        # Save audio URL to user's chat history in Firestore
-        current_user.save_message(
-            user_message="[Audio Message]",
-            ai_response="",
-            request_id=data.get('request_id', ''),
-            audio_url=result['url']
+        # Start async task for audio upload
+        task = process_audio_upload.delay(
+            audio_data,
+            current_user.firebase_uid,
+            request_id
         )
-            
+        
+        # Return task ID for status checking
         return jsonify({
-            'message': 'Audio uploaded successfully',
-            'url': result['url']
+            'message': 'Audio upload started',
+            'task_id': task.id,
+            'status': 'processing'
         })
 
     except Exception as e:
-        current_app.logger.error(f"Error uploading audio: {str(e)}")
+        current_app.logger.error(f"Error starting audio upload: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+@companion_bp.route('/upload-status/<task_id>', methods=['GET'])
+@login_required
+def upload_status(task_id):
+    """Check the status of an audio upload task."""
+    from ..celery_app import celery
+    
+    try:
+        task_result = celery.AsyncResult(task_id)
+        
+        if task_result.ready():
+            result = task_result.get()
+            if result.get('success'):
+                # Save audio URL to user's chat history in Firestore
+                current_user.save_message(
+                    user_message="[Audio Message]",
+                    ai_response="",
+                    request_id=result.get('request_id', ''),
+                    audio_url=result.get('url')
+                )
+                return jsonify({
+                    'status': 'completed',
+                    'result': result
+                })
+            else:
+                return jsonify({
+                    'status': 'failed',
+                    'error': result.get('error', 'Unknown error')
+                }), 500
+        else:
+            return jsonify({
+                'status': 'processing',
+                'state': task_result.state
+            })
+            
+    except Exception as e:
+        current_app.logger.error(f"Error checking upload status: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        }), 500
 
 @companion_bp.route('/recordings', methods=['GET'])
 @login_required
