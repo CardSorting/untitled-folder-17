@@ -265,13 +265,34 @@ function toggleRecording() {
     }
 }
 
+// Generate UUID v4
+function uuidv4() {
+    return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+    );
+}
+
+// Keep track of pending requests
+const pendingRequests = new Map();
+
 function sendMessageToAI(message) {
+    const requestId = uuidv4();
+    const timestamp = Date.now();
+    
+    pendingRequests.set(requestId, {
+        message,
+        timestamp
+    });
+
     fetch('/companion/chat', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: message })
+        body: JSON.stringify({ 
+            message: message,
+            request_id: requestId
+        })
     })
     .then(response => {
         if (!response.ok) {
@@ -280,15 +301,37 @@ function sendMessageToAI(message) {
         return response.json();
     })
     .then(data => {
-        addMessage(data.message, 'ai');
-        speakMessage(data.message);
+        // Check if this response matches a pending request
+        if (pendingRequests.has(data.request_id)) {
+            const request = pendingRequests.get(data.request_id);
+            // Only process if this is the most recent request or if the time difference is small
+            const timeDiff = Date.now() - request.timestamp;
+            if (timeDiff < 30000) { // 30 seconds threshold
+                addMessage(data.message, 'ai');
+                speakMessage(data.message);
+            } else {
+                console.log('Discarding old response:', data.request_id);
+            }
+            // Clean up the pending request
+            pendingRequests.delete(data.request_id);
+        }
         document.getElementById('status').textContent = '';
     })
     .catch(error => {
         console.error('Error:', error);
         document.getElementById('status').textContent = '';
         showError('Error getting AI response. Please try again.');
+        // Clean up the pending request on error
+        pendingRequests.delete(requestId);
     });
+
+    // Clean up old pending requests
+    const now = Date.now();
+    for (const [id, request] of pendingRequests.entries()) {
+        if (now - request.timestamp > 30000) { // Remove requests older than 30 seconds
+            pendingRequests.delete(id);
+        }
+    }
 }
 
 function addMessage(message, type) {

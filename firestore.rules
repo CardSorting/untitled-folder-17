@@ -1,0 +1,109 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isValidUser() {
+      return isAuthenticated() 
+        && request.resource.data.keys().hasAll(['email', 'displayName', 'createdAt'])
+        && request.resource.data.email is string
+        && request.resource.data.displayName is string
+        && request.resource.data.createdAt is timestamp;
+    }
+    
+    function isValidVideoUpload() {
+      return isAuthenticated()
+        && request.resource.data.keys().hasAll([
+          'userId', 
+          'fileName', 
+          'fileSize', 
+          'uploadedAt', 
+          'processingStatus', 
+          'splitOptions',
+          'thumbnailUrl'
+        ])
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.fileSize > 0
+        && request.resource.data.processingStatus in ['pending', 'processing', 'completed', 'failed'];
+    }
+
+    // User profiles collection
+    match /users/{userId} {
+      // Only allow users to read and write their own profile
+      allow read, write: if isOwner(userId);
+      
+      // Validate user profile creation
+      allow create: if isValidUser();
+      
+      // Limit profile updates to specific fields
+      allow update: if isOwner(userId)
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['displayName', 'photoURL', 'updatedAt']);
+    }
+
+    // Video uploads collection
+    match /videoUploads/{documentId} {
+      // Users can only read and write their own video uploads
+      allow read: if isAuthenticated() 
+        && resource.data.userId == request.auth.uid;
+      
+      // Validate video upload creation
+      allow create: if isValidVideoUpload();
+      
+      // Limit update fields for processing status
+      allow update: if isAuthenticated()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['processingStatus', 'processedChunks', 'updatedAt']);
+      
+      // Allow deletion of own video uploads
+      allow delete: if isAuthenticated()
+        && resource.data.userId == request.auth.uid;
+    }
+
+    // Batch delete validation
+    match /videoUploads/{documentId=**} {
+      // Allow batch delete only for authenticated users
+      allow delete: if isAuthenticated()
+        && resource.data.userId == request.auth.uid;
+    }
+
+    // Processing history collection
+    match /processingHistory/{documentId} {
+      allow read: if isAuthenticated() 
+        && request.auth.uid == resource.data.userId;
+      
+      allow create: if isAuthenticated()
+        && request.resource.data.keys().hasAll([
+          'userId', 
+          'videoId', 
+          'startTime', 
+          'endTime', 
+          'status'
+        ])
+        && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Video chunk metadata collection
+    match /videoChunks/{chunkId} {
+      // Restrict access to authenticated users who own the original video
+      allow read, write: if isAuthenticated()
+        && request.resource.data.originalUserId == request.auth.uid;
+    }
+
+    // Search and filter rules
+    match /searchIndex/{index} {
+      // Allow authenticated users to read search indexes
+      allow read: if isAuthenticated()
+        && request.auth.uid == resource.data.userId;
+    }
+  }
+}

@@ -1,16 +1,14 @@
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from .config import Config
 import os
 
-db = SQLAlchemy()
 login_manager = LoginManager()
 
 @login_manager.user_loader
 def load_user(user_id):
     from .models import User
-    return User.query.get(int(user_id))
+    return User.get_by_firebase_uid(user_id)
 
 def create_app(config_class=Config):
     app = Flask(__name__, 
@@ -18,9 +16,9 @@ def create_app(config_class=Config):
                 template_folder=os.path.join(os.path.dirname(__file__), 'templates'))
     app.config.from_object(config_class)
 
-    # Initialize extensions
-    db.init_app(app)
+    # Initialize Flask-Login
     login_manager.init_app(app)
+    login_manager.login_view = 'auth.login'
 
     # Initialize Firebase
     from .utils.firebase import initialize_firebase
@@ -34,10 +32,6 @@ def create_app(config_class=Config):
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
     app.register_blueprint(companion_bp)
-
-    # Create database tables
-    with app.app_context():
-        db.create_all()
 
     @app.context_processor
     def utility_processor():
