@@ -37,7 +37,7 @@ def chat():
         if not request_id:
             return jsonify({'error': 'No request ID provided'}), 400
 
-        # Start async chat task
+        # Process chat message
         from ..tasks import process_companion_chat
         result = process_companion_chat(user_message, current_user.firebase_uid, request_id)
         
