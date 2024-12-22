@@ -85,6 +85,7 @@ function initializeSpeechRecognition() {
         let finalTranscript = '';
 
         recognition.onstart = () => {
+            finalTranscript = '';
             console.log('Speech recognition started');
             document.getElementById('status').textContent = 'Listening... Click Stop when done speaking';
         };
@@ -96,7 +97,6 @@ function initializeSpeechRecognition() {
                 const transcript = event.results[i][0].transcript;
                 if (event.results[i].isFinal) {
                     finalTranscript += transcript;
-                    resetSilenceDetection();
                 } else {
                     interimTranscript += transcript;
                 }
@@ -131,7 +131,7 @@ function initializeSpeechRecognition() {
         recognition.onend = () => {
             if (finalTranscript) {
                 addMessage(finalTranscript, 'user');
-                sendAudioAndMessageToAI(finalTranscript);
+                sendMessageToAI(finalTranscript);
                 finalTranscript = '';
             }
             console.log('Speech recognition ended');

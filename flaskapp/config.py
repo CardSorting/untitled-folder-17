@@ -11,6 +11,9 @@ class Config:
         'sqlite:///' + os.path.join(basedir, '..', 'app.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+    # Redis settings
+    REDIS_URL = os.environ.get('REDIS_URL')
+
     # Firebase Admin SDK settings
     FIREBASE_CREDENTIALS_PATH = os.environ.get('FIREBASE_CREDENTIALS_PATH') or \
         os.path.join(basedir, '..', 'cred', 'irlmbm-firebase-adminsdk-p4dxq-35e9808542.json')
