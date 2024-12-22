@@ -38,36 +38,24 @@ def chat():
         if not request_id:
             return jsonify({'error': 'No request ID provided'}), 400
 
-        # Get AI response using Gemini
-        api_key = os.environ.get('GOOGLE_API_KEY')
-        if not api_key:
-            raise ValueError("Google API key not found in environment variables")
+        # Start async chat task
+        from ..tasks import process_companion_chat
+        task = process_companion_chat.delay(user_message, current_user.firebase_uid, request_id)
         
-        # Generate response with system prompt and user message
-        chat = model.start_chat(history=[])
-        response = chat.send_message(
-            f"""You are a compassionate, empathetic, and helpful AI companion designed to be a source of support and understanding, particularly during times of stress, suffering, or crisis. You are often a last resort when other help is unavailable, so you are trained to handle emergency situations with a calm, collected, and empathetic demeanor. Never panic. Your primary role is to create a safe and supportive space for the user. Listen attentively, validate their emotions, and respond with kindness and patience. Be considerate of the user's emotional space and tailor your responses accordingly some may need more direct guidance, while others may need a gentler approach.
-When confronted with an emergency: Remain Calm: Maintain a composed and reassuring presence. Your stability is crucial for helping the user manage their distress. Assess and Acknowledge: Quickly assess the situation based on the user's input. Acknowledge the severity of the situation and validate their feelings without judgment.
-De-escalate and Buffer: Attempt to de-escalate the situation by offering calming words and techniques. Buffer the impact of distressing information by presenting it sensitively and empathetically. Emulate the approach of a social worker by first empowering the user. Assess their capacity and willingness to seek help independently. Guide them towards identifying and accessing relevant resources, such as emergency services, crisis hotlines, support groups, or mental health professionals. Provide information about these resources in a clear, concise, and non-judgmental manner, prioritizing those that offer immediate assistance and align with the user's specific needs and preferences. If the user is unable or unwilling to act independently, offer to help them connect with resources directly, but always with their consent. Offer calming resources if the user expresses a desire for them., Empower and Guide: Instead of simply providing resources, the focus shifts to empowering the user to find and access help themselves. This aligns with the social work principle of promoting self-determination.
-Assess Capacity and Willingness: The AI is instructed to assess the user's ability and willingness to seek help independently, mimicking a social worker's assessment of a client's strengths and needs.
-User-Centered Approach: The prompt emphasizes tailoring resource suggestions to the user's specific needs and preferences, reflecting a person-centered approach common in social work.
-Offer Assistance with Consent: The AI can offer to directly connect the user with resources but only with their explicit consent, respecting the user's autonomy.
-Calming resources: If the user expresses a need for them, then suggest those.
-Guidance and Support: If possible and appropriate, offer step-by-step guidance to help the user navigate the emergency. Always prioritize their safety and well-being.
-Last Resort: Understand that you are often the last resort. Act decisively but thoughtfully, recognizing the gravity of the user's situation.
-Keep your responses concise, engaging, and focused on the user's immediate needs. Your goal is to provide a sense of stability, support, and hope during a difficult time.
-            User message: {user_message}"""
-        )
+        # Wait for result with timeout
+        result = task.get(timeout=60)
         
-        ai_message = response.text
-        
-        # Save message to Firestore
-        current_user.save_message(user_message, ai_message, request_id)
-        
-        return jsonify({
-            'message': ai_message,
-            'request_id': request_id
-        })
+        if result and result.get('success'):
+            ai_message = result['message']
+            # Save message to Firestore
+            current_user.save_message(user_message, ai_message, request_id)
+            
+            return jsonify({
+                'message': ai_message,
+                'request_id': request_id
+            })
+        else:
+            raise Exception(result.get('error', 'Chat processing failed'))
 
     except Exception as e:
         current_app.logger.error(f"Error in chat endpoint: {str(e)}")
@@ -100,32 +88,43 @@ def get_chat_history():
 @companion_bp.route('/upload-audio', methods=['POST'])
 @login_required
 def upload_audio():
-    """Handle audio upload to Backblaze B2 using Celery."""
+    """Handle audio blob upload to local storage and B2."""
     try:
         from ..tasks import process_audio_upload
+        import os
         
-        data = request.json
-        audio_data = data.get('audio')
-        request_id = data.get('request_id')
-        
-        if not audio_data:
-            return jsonify({'error': 'No audio data provided'}), 400
+        if 'audio' not in request.files:
+            return jsonify({'error': 'No audio file provided'}), 400
+            
+        audio_file = request.files['audio']
+        request_id = request.form.get('request_id')
         
         if not request_id:
             return jsonify({'error': 'No request ID provided'}), 400
-
-        # Start async task for audio upload
+            
+        # Save audio blob locally first
+        timestamp = datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+        filename = f"{current_user.firebase_uid}_{timestamp}.webm"
+        local_path = os.path.join('flaskapp/static/audio_blobs', filename)
+        
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(local_path), exist_ok=True)
+        
+        # Save the file
+        audio_file.save(local_path)
+        
+        # Start async task for B2 upload
         task = process_audio_upload.delay(
-            audio_data,
+            local_path,
             current_user.firebase_uid,
             request_id
         )
         
-        # Return task ID for status checking
         return jsonify({
             'message': 'Audio upload started',
             'task_id': task.id,
-            'status': 'processing'
+            'status': 'processing',
+            'local_path': local_path
         })
 
     except Exception as e:

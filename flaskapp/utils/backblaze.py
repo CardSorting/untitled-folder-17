@@ -9,7 +9,7 @@ class BackblazeB2:
         self.api = B2Api(self.info)
         self.key_id = os.environ.get('B2_KEY_ID')
         self.application_key = os.environ.get('B2_APPLICATION_KEY')
-        self.bucket_name = os.environ.get('B2_BUCKET_NAME')
+        self.bucket_name = "matrixmingle"
         
         if not all([self.key_id, self.application_key, self.bucket_name]):
             raise ValueError("Missing required Backblaze B2 environment variables")
