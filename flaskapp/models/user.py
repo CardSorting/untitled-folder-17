@@ -48,7 +48,7 @@ class User(UserMixin):
         user_ref.set(user_data)
         return User(firebase_uid, email, user_data)
 
-    def save_message(self, message, ai_response, request_id):
+    def save_message(self, message, ai_response, request_id, audio_url=None):
         """Save a chat message and its response"""
         db = firestore.client()
         messages_ref = db.collection('users').document(self.firebase_uid).collection('messages')
@@ -58,7 +58,8 @@ class User(UserMixin):
             'ai_response': ai_response,
             'request_id': request_id,
             'timestamp': datetime.utcnow(),
-            'user_id': self.firebase_uid
+            'user_id': self.firebase_uid,
+            'audio_url': audio_url
         }
         
         messages_ref.add(message_data)
