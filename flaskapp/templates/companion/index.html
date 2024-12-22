@@ -236,6 +236,10 @@ async function sendMessageToAI(message) {
             const timeDiff = Date.now() - request.timestamp;
             if (timeDiff < 30000) {
                 addMessage(data.message, 'ai');
+                // Ensure voices are loaded before speaking
+                if (voices.length === 0) {
+                    loadVoices();
+                }
                 speakMessage(data.message);
             } else {
                 console.log('Discarding old response:', data.request_id);

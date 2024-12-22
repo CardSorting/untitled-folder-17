@@ -46,8 +46,6 @@ def chat():
         
         if result and result.get('success'):
             ai_message = result['message']
-            # Save message to Firestore
-            current_user.save_message(user_message, ai_message, request_id)
             
             return jsonify({
                 'message': ai_message,

@@ -30,12 +30,22 @@ Last Resort: Understand that you are often the last resort. Act thoughtfully and
 Keep your responses concise, deeply empathetic, and focused on the user's immediate emotional needs. Your goal is to provide a sense of being heard, understood, and supported during a difficult time. Avoid platitudes and focus on genuine connection.
             User message: {user_message}"""
         )
+        from flaskapp.models.user import User
+        user = User.get_user_by_firebase_uid(user_id)
+        if user:
+            user.save_message(user_message, response.text, request_id)
         
         return {
             'success': True,
             'message': response.text,
-            'request_id': request_id
+            'request_id': request_id,
+            'user_message': user_message
         }
         
     except Exception as exc:
-        self.retry(exc=exc, countdown=2 ** self.request.retries)
+        current_app.logger.error(f"Error in process_companion_chat task: {str(exc)}")
+        return {
+            'success': False,
+            'error': str(exc),
+            'request_id': request_id
+        }
