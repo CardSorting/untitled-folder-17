@@ -1,6 +1,6 @@
 import os
 from flask import current_app
-from .celery_app import celery
+from .rq_app import q
 from datetime import datetime
 import google.generativeai as genai
 
@@ -9,8 +9,7 @@ genai.configure(api_key=os.environ.get('GOOGLE_API_KEY'))
 model = genai.GenerativeModel('gemini-exp-1206')
 
 
-@celery.task(bind=True, name='process_companion_chat', max_retries=3)
-def process_companion_chat(self, user_message, user_id, request_id):
+def process_companion_chat(user_message, user_id, request_id):
     """Process chat message with Gemini AI"""
     try:
         # Generate response with system prompt and user message

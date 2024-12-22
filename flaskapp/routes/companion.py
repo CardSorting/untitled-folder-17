@@ -39,20 +39,14 @@ def chat():
 
         # Start async chat task
         from ..tasks import process_companion_chat
-        task = process_companion_chat.delay(user_message, current_user.firebase_uid, request_id)
+        from ..rq_app import q
+        task = q.enqueue(process_companion_chat, user_message, current_user.firebase_uid, request_id)
         
-        # Wait for result with timeout
-        result = task.get(timeout=60)
-        
-        if result and result.get('success'):
-            ai_message = result['message']
-            
-            return jsonify({
-                'message': ai_message,
-                'request_id': request_id
-            })
-        else:
-            raise Exception(result.get('error', 'Chat processing failed'))
+        return jsonify({
+            'message': 'Task enqueued',
+            'request_id': request_id,
+            'task_id': task.id
+        })
 
     except Exception as e:
         current_app.logger.error(f"Error in chat endpoint: {str(e)}")
