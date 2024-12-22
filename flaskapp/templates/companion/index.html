@@ -70,8 +70,8 @@ let recognition = null;
 // Audio processing settings
 const BUFFER_SIZE = 4096;
 const SAMPLE_RATE = 44100;
-const SILENCE_THRESHOLD = -50; // dB
-const SILENCE_DURATION = 2000; // 2 seconds
+const SILENCE_THRESHOLD = -65; // dB (more forgiving)
+const SILENCE_DURATION = 3000; // 3 seconds (more time before stopping)
 
 // Load voices
 function loadVoices() {
@@ -96,7 +96,7 @@ function initializeSpeechRecognition() {
 
         recognition.onstart = () => {
             console.log('Speech recognition started');
-            document.getElementById('status').textContent = 'Listening...';
+            document.getElementById('status').textContent = 'Listening... Click Stop when done speaking';
         };
 
         recognition.onresult = (event) => {
@@ -113,24 +113,35 @@ function initializeSpeechRecognition() {
             }
 
             if (interimTranscript) {
-                document.getElementById('status').textContent = 'Heard: ' + interimTranscript;
+                document.getElementById('status').textContent = '✓ Heard: ' + interimTranscript;
+                document.getElementById('status').className = 'text-sm text-green-600 italic font-medium';
             }
         };
 
         recognition.onerror = (event) => {
             console.error('Speech recognition error:', event.error);
-            if (event.error === 'no-speech') {
-                document.getElementById('status').textContent = 'No speech detected. Please try again.';
-            } else {
-                document.getElementById('status').textContent = '';
-                showError(`Speech recognition error: ${event.error}`);
+            const errorMessages = {
+                'no-speech': 'No speech detected. Please speak louder or check your microphone.',
+                'aborted': 'Speech recognition was interrupted. Please try again.',
+                'audio-capture': 'No microphone detected. Please check your microphone connection.',
+                'network': 'Network error occurred. Please check your internet connection.',
+                'not-allowed': 'Microphone permission denied. Please allow microphone access.',
+                'service-not-allowed': 'Speech recognition service not available in your browser.',
+                'bad-grammar': 'Speech recognition configuration error.',
+                'language-not-supported': 'Selected language is not supported.'
+            };
+            const errorMessage = errorMessages[event.error] || `Speech recognition error: ${event.error}`;
+            document.getElementById('status').textContent = errorMessage;
+            document.getElementById('status').className = 'text-sm text-red-600 italic font-medium';
+            if (event.error === 'not-allowed') {
+                showError('Please allow microphone access in your browser settings to use voice chat.');
             }
         };
 
         recognition.onend = () => {
             if (finalTranscript) {
                 addMessage(finalTranscript, 'user');
-                sendMessageToAI(finalTranscript);
+                sendAudioAndMessageToAI(finalTranscript);
                 finalTranscript = '';
             }
             console.log('Speech recognition ended');
@@ -155,7 +166,7 @@ function setupAudioProcessing(stream) {
     // Connect nodes
     source.connect(analyser);
     analyser.connect(audioProcessor);
-    audioProcessor.connect(audioContext.destination);
+    // Remove connection to destination to prevent audio playback
     
     // Process audio data
     const audioChunks = [];
@@ -165,12 +176,6 @@ function setupAudioProcessing(stream) {
         if (!isRecording) return;
         
         const inputData = e.inputBuffer.getChannelData(0);
-        const outputData = e.outputBuffer.getChannelData(0);
-        
-        // Copy input to output (pass-through)
-        for (let i = 0; i < inputData.length; i++) {
-            outputData[i] = inputData[i];
-        }
         
         // Check audio level
         const dataArray = new Float32Array(analyser.frequencyBinCount);
@@ -255,14 +260,15 @@ function toggleRecording() {
         .then(stream => {
             isRecording = true;
             button.classList.add('bg-red-600', 'hover:bg-red-700');
-            button.classList.remove('bg-primary-600', 'hover:bg-primary-700');
+            button.classList.remove('bg-primary-600', 'hover:bg-primary-700', 'opacity-50', 'cursor-not-allowed');
             button.innerHTML = `
                 <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                 </svg>
                 Stop Recording
             `;
-            status.textContent = 'Recording...';
+            status.textContent = 'Recording... Speak clearly into your microphone';
+            status.className = 'text-sm text-green-600 italic font-medium';
             recordingIndicator.classList.remove('hidden');
             
             setupAudioProcessing(stream);
@@ -276,7 +282,8 @@ function toggleRecording() {
         })
         .catch(error => {
             console.error('Error accessing microphone:', error);
-            status.textContent = 'Error accessing microphone';
+            status.textContent = 'Error: Could not access microphone';
+            status.className = 'text-sm text-red-600 italic font-medium';
             showError('Please ensure your microphone is connected and you have granted permission to use it.');
         });
     } else {
@@ -319,7 +326,7 @@ function uuidv4() {
 
 const pendingRequests = new Map();
 
-function sendMessageToAI(message) {
+async function sendMessageToAI(message) {
     const requestId = uuidv4();
     const timestamp = Date.now();
     
