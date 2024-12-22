@@ -59,19 +59,9 @@
 <script>
 let isRecording = false;
 let mediaRecorder = null;
-let audioContext = null;
-let analyser = null;
-let audioProcessor = null;
-let silenceTimer = null;
 let speechSynthesis = window.speechSynthesis;
 let voices = [];
 let recognition = null;
-
-// Audio processing settings
-const BUFFER_SIZE = 4096;
-const SAMPLE_RATE = 44100;
-const SILENCE_THRESHOLD = -65; // dB (more forgiving)
-const SILENCE_DURATION = 3000; // 3 seconds (more time before stopping)
 
 // Load voices
 function loadVoices() {
@@ -149,97 +139,6 @@ function initializeSpeechRecognition() {
     }
 }
 
-function setupAudioProcessing(stream) {
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    analyser = audioContext.createAnalyser();
-    const source = audioContext.createMediaStreamSource(stream);
-    
-    // Configure analyser
-    analyser.fftSize = 2048;
-    analyser.smoothingTimeConstant = 0.8;
-    analyser.minDecibels = -90;
-    analyser.maxDecibels = -10;
-    
-    // Create script processor for audio processing
-    audioProcessor = audioContext.createScriptProcessor(BUFFER_SIZE, 1, 1);
-    
-    // Connect nodes
-    source.connect(analyser);
-    analyser.connect(audioProcessor);
-    // Remove connection to destination to prevent audio playback
-    
-    // Process audio data
-    const audioChunks = [];
-    let isRecordingChunk = false;
-    
-    audioProcessor.onaudioprocess = (e) => {
-        if (!isRecording) return;
-        
-        const inputData = e.inputBuffer.getChannelData(0);
-        
-        // Check audio level
-        const dataArray = new Float32Array(analyser.frequencyBinCount);
-        analyser.getFloatFrequencyData(dataArray);
-        const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
-        
-        if (average < SILENCE_THRESHOLD) {
-            if (!silenceTimer) {
-                silenceTimer = setTimeout(() => {
-                    if (isRecording) {
-                        console.log('Silence detected, stopping recording');
-                        toggleRecording();
-                    }
-                }, SILENCE_DURATION);
-            }
-            if (isRecordingChunk) {
-                isRecordingChunk = false;
-                const blob = new Blob(audioChunks, { type: 'audio/webm;codecs=opus' });
-                uploadAudioChunk(blob);
-                audioChunks.length = 0;
-            }
-        } else {
-            resetSilenceDetection();
-            if (!isRecordingChunk) {
-                isRecordingChunk = true;
-            }
-            if (mediaRecorder && mediaRecorder.state === 'recording') {
-                audioChunks.push(new Float32Array(inputData));
-            }
-        }
-    };
-}
-
-function resetSilenceDetection() {
-    if (silenceTimer) {
-        clearTimeout(silenceTimer);
-        silenceTimer = null;
-    }
-}
-
-async function uploadAudioChunk(blob) {
-    const requestId = uuidv4();
-    const formData = new FormData();
-    formData.append('audio', blob);
-    formData.append('request_id', requestId);
-    
-    try {
-        const response = await fetch('/companion/upload-audio', {
-            method: 'POST',
-            body: formData
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to upload audio');
-        }
-
-        const data = await response.json();
-        console.log('Audio chunk uploaded:', data);
-        
-    } catch (error) {
-        console.error('Error uploading audio chunk:', error);
-        showError('Failed to upload audio chunk');
-    }
-}
 
 function toggleRecording() {
     const button = document.getElementById('micButton');
@@ -254,7 +153,6 @@ function toggleRecording() {
                 echoCancellation: true,
                 noiseSuppression: true,
                 autoGainControl: true,
-                sampleRate: SAMPLE_RATE
             }
         })
         .then(stream => {
@@ -271,13 +169,7 @@ function toggleRecording() {
             status.className = 'text-sm text-green-600 italic font-medium';
             recordingIndicator.classList.remove('hidden');
             
-            setupAudioProcessing(stream);
             recognition.start();
-            
-            mediaRecorder = new MediaRecorder(stream, {
-                mimeType: 'audio/webm;codecs=opus'
-            });
-            mediaRecorder.start();
             
         })
         .catch(error => {
@@ -302,19 +194,6 @@ function toggleRecording() {
         if (recognition) {
             recognition.stop();
         }
-        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-            mediaRecorder.stop();
-        }
-        if (mediaRecorder && mediaRecorder.stream) {
-            mediaRecorder.stream.getTracks().forEach(track => track.stop());
-        }
-        if (audioContext) {
-            audioProcessor.disconnect();
-            analyser.disconnect();
-            audioContext.close();
-            audioContext = null;
-        }
-        resetSilenceDetection();
     }
 }
 
