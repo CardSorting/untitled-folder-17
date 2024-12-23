@@ -6,8 +6,25 @@
 <div class="max-w-4xl mx-auto">
     <!-- Chat Header -->
     <div class="bg-white rounded-t-lg shadow-sm p-4 border-b">
-        <h1 class="text-2xl font-bold text-gray-900">Voice Chat</h1>
-        <p class="text-gray-500 mt-1">Have a natural conversation with your AI companion</p>
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Voice Chat</h1>
+                <p class="text-gray-500 mt-1">Have a natural conversation with your AI companion</p>
+            </div>
+            <div class="relative">
+                <button id="threadDropdownButton" class="inline-flex justify-center w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500" aria-haspopup="true" aria-expanded="false">
+                    Select Thread
+                    <svg class="-mr-1 ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+                <div id="threadDropdown" class="hidden absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none" role="menu" aria-orientation="vertical" aria-labelledby="threadDropdownButton">
+                    <div class="py-1" role="none">
+                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem">New Thread</a>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Chat Messages -->
@@ -72,7 +89,53 @@ if (speechSynthesis.onvoiceschanged !== undefined) {
     speechSynthesis.onvoiceschanged = loadVoices;
 }
 
+let currentThreadId = null;
+
 document.getElementById('micButton').addEventListener('click', toggleRecording);
+document.getElementById('threadDropdownButton').addEventListener('click', toggleThreadDropdown);
+document.querySelector('#threadDropdown a').addEventListener('click', createNewThread);
+
+function toggleThreadDropdown() {
+    const dropdown = document.getElementById('threadDropdown');
+    dropdown.classList.toggle('hidden');
+}
+
+function createNewThread(event) {
+    event.preventDefault();
+    currentThreadId = uuidv4();
+    document.getElementById('threadDropdown').classList.add('hidden');
+    document.getElementById('chatMessages').innerHTML = '';
+    fetchChatHistory(currentThreadId);
+}
+
+function fetchChatHistory(threadId = null) {
+    const chatMessages = document.getElementById('chatMessages');
+    chatMessages.innerHTML = '';
+    
+    let url = '/companion/history';
+    if (threadId) {
+        url += `?thread_id=${threadId}`;
+    }
+
+    fetch(url)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.messages) {
+                data.messages.forEach(message => {
+                    addMessage(message, message.type);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching chat history:', error);
+            showError('Error fetching chat history. Please try again.');
+        });
+}
 
 function initializeSpeechRecognition() {
     if (!recognition) {
@@ -221,7 +284,8 @@ async function sendMessageToAI(message) {
         },
         body: JSON.stringify({ 
             message: message,
-            request_id: requestId
+            request_id: requestId,
+            thread_id: currentThreadId
         })
     })
     .then(response => {

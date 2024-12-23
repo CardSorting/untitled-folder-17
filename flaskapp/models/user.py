@@ -48,11 +48,15 @@ class User(UserMixin):
         user_ref.set(user_data)
         return User(firebase_uid, email, user_data)
 
-    def save_message(self, message, ai_response, request_id, audio_url=None):
+    def save_message(self, message, ai_response, request_id, thread_id=None, audio_url=None):
         """Save chat messages to the conversation thread"""
         db = firestore.client()
         messages_ref = db.collection('users').document(self.firebase_uid).collection('messages')
         
+        if not thread_id:
+            import uuid
+            thread_id = str(uuid.uuid4())
+
         # Save user message
         user_message = {
             'content': message,
@@ -60,6 +64,7 @@ class User(UserMixin):
             'request_id': request_id,
             'timestamp': datetime.utcnow(),
             'user_id': self.firebase_uid,
+            'thread_id': thread_id,
             'audio_url': audio_url
         }
         messages_ref.add(user_message)
@@ -70,18 +75,23 @@ class User(UserMixin):
             'type': 'ai',
             'request_id': request_id,
             'timestamp': datetime.utcnow(),
-            'user_id': self.firebase_uid
+            'user_id': self.firebase_uid,
+            'thread_id': thread_id
         }
         messages_ref.add(ai_message)
 
-    def get_chat_history(self, limit=50):
+    def get_chat_history(self, limit=50, thread_id=None):
         """Get user's chat history"""
         db = firestore.client()
         messages_ref = (db.collection('users')
                        .document(self.firebase_uid)
                        .collection('messages')
-                       .order_by('timestamp', direction=firestore.Query.DESCENDING)
-                       .limit(limit))
+                       .order_by('timestamp', direction=firestore.Query.DESCENDING))
+        
+        if thread_id:
+            messages_ref = messages_ref.where('thread_id', '==', thread_id)
+
+        messages_ref = messages_ref.limit(limit)
         
         messages = []
         for doc in messages_ref.stream():

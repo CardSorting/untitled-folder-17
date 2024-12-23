@@ -15,7 +15,7 @@ celery.conf.update(
     accept_content=['json']
 )
 @celery.task
-def process_companion_chat(user_message, user_id, request_id):
+def process_companion_chat(user_message, user_id, request_id, thread_id=None):
     """Process chat message with Gemini AI synchronously"""
     from flask import Flask
     try:
@@ -33,7 +33,7 @@ def process_companion_chat(user_message, user_id, request_id):
             if not user:
                 raise Exception("User not found")
                 
-            chat_history = user.get_chat_history(limit=10)  # Get last 10 messages
+            chat_history = user.get_chat_history(limit=10, thread_id=thread_id)  # Get last 10 messages
             history = []
             
             # Convert chat history to Gemini format
@@ -63,7 +63,7 @@ Keep your responses concise, deeply empathetic, and imbued with a sense of wisdo
             from flaskapp.models.user import User
             user = User.get_by_firebase_uid(user_id)
             if user:
-                user.save_message(user_message, response.text, request_id)
+                user.save_message(user_message, response.text, request_id, thread_id=thread_id)
             
             return {
                 'success': True,

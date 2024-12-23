@@ -30,6 +30,7 @@ def chat():
         data = request.json
         user_message = data.get('message')
         request_id = data.get('request_id')
+        thread_id = data.get('thread_id')
         
         if not user_message:
             return jsonify({'error': 'No message provided', 'request_id': request_id}), 400
@@ -39,7 +40,7 @@ def chat():
 
         # Process chat message
         from ..tasks import process_companion_chat
-        result = process_companion_chat(user_message, current_user.firebase_uid, request_id)
+        result = process_companion_chat(user_message, current_user.firebase_uid, request_id, thread_id)
         
         return jsonify(result)
 
