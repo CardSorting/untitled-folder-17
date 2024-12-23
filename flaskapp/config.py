@@ -11,8 +11,13 @@ class Config:
         'sqlite:///' + os.path.join(basedir, '..', 'app.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    # Redis settings
+    # Redis and Celery settings
     REDIS_URL = 'redis://default:aPgEdkFGdTOBJtLJJMQEApZKyYsUDcNm@junction.proxy.rlwy.net:54156'
+    CELERY_BROKER_URL = REDIS_URL
+    CELERY_RESULT_BACKEND = REDIS_URL
+    CELERY_TASK_SERIALIZER = 'json'
+    CELERY_RESULT_SERIALIZER = 'json'
+    CELERY_ACCEPT_CONTENT = ['json']
 
     # Firebase Admin SDK settings
     FIREBASE_CREDENTIALS_PATH = os.environ.get('FIREBASE_CREDENTIALS_PATH') or \

@@ -22,11 +22,6 @@ def companion():
 def chat():
     """Handle chat messages and return AI response."""
     try:
-        from flask_login import current_user
-        
-        if not current_user.is_authenticated:
-            return jsonify({'error': 'Authentication required'}), 401
-            
         data = request.json
         user_message = data.get('message')
         request_id = data.get('request_id')
@@ -56,11 +51,6 @@ def chat():
 def get_chat_history():
     """Get user's chat history."""
     try:
-        from flask_login import current_user
-        
-        if not current_user.is_authenticated:
-            return jsonify({'error': 'Authentication required'}), 401
-            
         limit = request.args.get('limit', default=50, type=int)
         messages = current_user.get_chat_history(limit=limit)
         
