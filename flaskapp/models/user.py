@@ -49,20 +49,30 @@ class User(UserMixin):
         return User(firebase_uid, email, user_data)
 
     def save_message(self, message, ai_response, request_id, audio_url=None):
-        """Save a chat message and its response"""
+        """Save chat messages to the conversation thread"""
         db = firestore.client()
         messages_ref = db.collection('users').document(self.firebase_uid).collection('messages')
         
-        message_data = {
-            'user_message': message,
-            'ai_response': ai_response,
+        # Save user message
+        user_message = {
+            'content': message,
+            'type': 'user',
             'request_id': request_id,
             'timestamp': datetime.utcnow(),
             'user_id': self.firebase_uid,
             'audio_url': audio_url
         }
+        messages_ref.add(user_message)
         
-        messages_ref.add(message_data)
+        # Save AI response
+        ai_message = {
+            'content': ai_response,
+            'type': 'ai',
+            'request_id': request_id,
+            'timestamp': datetime.utcnow(),
+            'user_id': self.firebase_uid
+        }
+        messages_ref.add(ai_message)
 
     def get_chat_history(self, limit=50):
         """Get user's chat history"""

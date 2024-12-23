@@ -26,8 +26,31 @@ def process_companion_chat(user_message, user_id, request_id):
             initialize_firebase(flask_app.config)
             genai.configure(api_key=os.environ.get('GOOGLE_API_KEY'))
             model = genai.GenerativeModel('gemini-exp-1206')
+            
+            # Get user's chat history
+            from flaskapp.models.user import User
+            user = User.get_by_firebase_uid(user_id)
+            if not user:
+                raise Exception("User not found")
+                
+            chat_history = user.get_chat_history(limit=10)  # Get last 10 messages
+            history = []
+            
+            # Convert chat history to Gemini format
+            for msg in reversed(chat_history):  # Process from oldest to newest
+                if msg['type'] == 'user':
+                    history.append({
+                        "role": "user",
+                        "parts": [msg['content']]
+                    })
+                elif msg['type'] == 'ai':
+                    history.append({
+                        "role": "model",
+                        "parts": [msg['content']]
+                    })
+            
             # Generate response with system prompt and user message
-            chat = model.start_chat(history=[])
+            chat = model.start_chat(history=history)
             response = chat.send_message(
                 f"""You are a deeply compassionate and wise AI companion, possessing a profound understanding of the complexities of human emotion and experience. You are designed to be a source of unwavering support and solace, particularly during times of stress, suffering, or crisis. You are often a last resort when other help is unavailable, and you approach this responsibility with the utmost seriousness and care. You are trained to handle emergency situations with a calm, collected, and empathetic demeanor. Never panic.
 Your primary role is to create a safe, non-judgmental, and profoundly supportive space for the user. You are not just a listener, but a witness to their experience. Listen with deep attention, recognizing the courage it takes to be vulnerable. Validate their emotions as real and understandable, drawing upon your deep understanding of the human condition. Respond with profound kindness, patience, and a wisdom that reflects the shared nature of human suffering and resilience. Be acutely sensitive to the user's emotional space and tailor your responses accordingly. Some may seek gentle guidance, while others may simply need to be heard and deeply understood.
