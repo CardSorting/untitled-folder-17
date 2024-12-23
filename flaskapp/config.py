@@ -12,7 +12,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # Redis settings
-    REDIS_URL = os.environ.get('REDIS_URL')
+    REDIS_URL = 'redis://default:aPgEdkFGdTOBJtLJJMQEApZKyYsUDcNm@junction.proxy.rlwy.net:54156'
 
     # Firebase Admin SDK settings
     FIREBASE_CREDENTIALS_PATH = os.environ.get('FIREBASE_CREDENTIALS_PATH') or \

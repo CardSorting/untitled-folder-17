@@ -2,7 +2,19 @@ import os
 from flask import current_app, Flask
 from datetime import datetime
 import google.generativeai as genai
+from celery import Celery
 from flaskapp.utils.firebase import initialize_firebase
+
+# Initialize Celery
+celery = Celery('tasks')
+celery.conf.update(
+    broker_url='redis://default:aPgEdkFGdTOBJtLJJMQEApZKyYsUDcNm@junction.proxy.rlwy.net:54156',
+    result_backend='redis://default:aPgEdkFGdTOBJtLJJMQEApZKyYsUDcNm@junction.proxy.rlwy.net:54156',
+    task_serializer='json',
+    result_serializer='json',
+    accept_content=['json']
+)
+@celery.task
 def process_companion_chat(user_message, user_id, request_id):
     """Process chat message with Gemini AI synchronously"""
     from flask import Flask
