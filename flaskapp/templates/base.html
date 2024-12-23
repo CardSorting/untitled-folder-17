@@ -132,16 +132,89 @@
 
     <!-- Footer -->
     <footer class="bg-white mt-auto border-t border-gray-200">
-        <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 md:flex md:items-center md:justify-between lg:px-8">
-            <div class="flex justify-center space-x-6 md:order-2">
-                <p class="text-center text-sm text-gray-500">
-                    For educational and practice purposes only. Not a substitute for professional medical advice, diagnosis, or treatment.
-                </p>
+        <div class="max-w-7xl mx-auto pt-12 pb-8 px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <!-- Brand Section -->
+                <div class="col-span-1">
+                    <div class="flex flex-col items-start">
+                        <span class="text-xl font-bold text-primary-600">CareConnect AI</span>
+                        <p class="mt-4 text-sm text-gray-500 leading-relaxed">
+                            Empowering mental health support through innovative AI technology.
+                        </p>
+                        <!-- Social Links -->
+                        <div class="mt-4 flex space-x-4">
+                            <a href="#" class="text-gray-400 hover:text-primary-500 transition-colors duration-200">
+                                <span class="sr-only">Twitter</span>
+                                <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84"/>
+                                </svg>
+                            </a>
+                            <a href="https://patreon.com/matrixmingle" class="text-gray-400 hover:text-primary-500 transition-colors duration-200">
+                                <span class="sr-only">Patreon</span>
+                                <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M14.82 2.41c3.96 0 7.18 3.24 7.18 7.21 0 3.96-3.22 7.18-7.18 7.18-3.97 0-7.21-3.22-7.21-7.18 0-3.97 3.24-7.21 7.21-7.21M2 21.6h3.5V2.41H2V21.6z"/>
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div class="col-span-1">
+                    <h3 class="text-sm font-semibold text-gray-900 tracking-wider uppercase">Quick Links</h3>
+                    <ul class="mt-4 space-y-3">
+                        <li>
+                            <a href="{{ url_for('main.home') }}" class="text-base text-gray-500 hover:text-primary-500 transition-colors duration-200">Home</a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('main.providers') }}" class="text-base text-gray-500 hover:text-primary-500 transition-colors duration-200">For Providers</a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('companion.companion') }}" class="text-base text-gray-500 hover:text-primary-500 transition-colors duration-200">Start Session</a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Support -->
+                <div class="col-span-1">
+                    <h3 class="text-sm font-semibold text-gray-900 tracking-wider uppercase">Support</h3>
+                    <ul class="mt-4 space-y-3">
+                        <li>
+                            <a href="https://patreon.com/matrixmingle" class="text-base text-gray-500 hover:text-primary-500 transition-colors duration-200">Support Us</a>
+                        </li>
+                        <li>
+                            <a href="#" class="text-base text-gray-500 hover:text-primary-500 transition-colors duration-200">Contact</a>
+                        </li>
+                        <li>
+                            <a href="#" class="text-base text-gray-500 hover:text-primary-500 transition-colors duration-200">FAQ</a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Legal -->
+                <div class="col-span-1">
+                    <h3 class="text-sm font-semibold text-gray-900 tracking-wider uppercase">Legal</h3>
+                    <ul class="mt-4 space-y-3">
+                        <li>
+                            <a href="#" class="text-base text-gray-500 hover:text-primary-500 transition-colors duration-200">Privacy Policy</a>
+                        </li>
+                        <li>
+                            <a href="#" class="text-base text-gray-500 hover:text-primary-500 transition-colors duration-200">Terms of Service</a>
+                        </li>
+                    </ul>
+                </div>
             </div>
-            <div class="mt-8 md:mt-0 md:order-1">
-                <p class="text-center text-base text-gray-400">
-                    &copy; {{ now.year }} CareConnect AI. All rights reserved.
-                </p>
+
+            <!-- Bottom Section -->
+            <div class="mt-12 pt-8 border-t border-gray-200">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <p class="text-sm text-gray-400">
+                        &copy; {{ now.year }} CareConnect AI. All rights reserved.
+                    </p>
+                    <p class="text-sm text-gray-500 md:text-right">
+                        For educational and practice purposes only. Not a substitute for professional medical advice, diagnosis, or treatment.
+                    </p>
+                </div>
             </div>
         </div>
     </footer>
