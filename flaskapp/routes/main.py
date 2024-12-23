@@ -10,3 +10,10 @@ def home():
     return render_template('main/home.html', 
                          current_user=current_user,
                          now=datetime.utcnow())
+
+@main_bp.route('/providers')
+def providers():
+    """Render the providers page."""
+    return render_template('main/providers.html',
+                           current_user=current_user,
+                           now=datetime.utcnow())
