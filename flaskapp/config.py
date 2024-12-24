@@ -12,7 +12,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # Redis and Celery settings
-    REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379')
+    REDIS_URL = os.environ.get('REDIS_URL', 'redis://red-ctljco23esus73egegsg:6379')
     CHAT_REDIS_URL = os.environ.get('CHAT_REDIS_URL', REDIS_URL)
     CELERY_BROKER_URL = REDIS_URL
     broker_url = REDIS_URL
