@@ -6,8 +6,8 @@ services:
     plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: |
-      gunicorn "flaskapp:create_app()" --config gunicorn.conf.py &
-      celery -A flaskapp.celery_app worker --loglevel=info
+      celery -A flaskapp.celery_app worker --loglevel=info --concurrency=1 &
+      gunicorn "flaskapp:create_app()" --config gunicorn.conf.py
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
