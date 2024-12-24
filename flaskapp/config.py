@@ -27,31 +27,28 @@ class Config:
     }
 
     # Firebase Admin SDK settings
-    FIREBASE_CREDENTIALS_PATH = os.environ.get('FIREBASE_CREDENTIALS_PATH') or \
-        os.path.join(basedir, '..', 'cred', 'irlmbm-firebase-adminsdk-p4dxq-35e9808542.json')
+    if os.environ.get('FIREBASE_CREDENTIALS_JSON'):
+        FIREBASE_CREDENTIALS = json.loads(os.environ.get('FIREBASE_CREDENTIALS_JSON'))
+    else:
+        FIREBASE_CREDENTIALS_PATH = os.environ.get('FIREBASE_CREDENTIALS_PATH') or \
+            os.path.join(basedir, '..', 'cred', 'irlmbm-firebase-adminsdk-p4dxq-35e9808542.json')
+        try:
+            with open(FIREBASE_CREDENTIALS_PATH) as f:
+                FIREBASE_CREDENTIALS = json.load(f)
+        except Exception as e:
+            print(f"Warning: Could not load Firebase credentials: {e}")
+            FIREBASE_CREDENTIALS = {}
 
-    # Load Firebase Web SDK config from credentials file
-    try:
-        with open(FIREBASE_CREDENTIALS_PATH) as f:
-            cred_data = json.load(f)
-            project_id = cred_data.get('project_id', '')
-            
-            # Firebase Web SDK settings
-            FIREBASE_API_KEY = os.environ.get('FIREBASE_API_KEY')
-            FIREBASE_AUTH_DOMAIN = f"{project_id}.firebaseapp.com"
-            FIREBASE_PROJECT_ID = project_id
-            FIREBASE_STORAGE_BUCKET = f"{project_id}.appspot.com"
-            FIREBASE_MESSAGING_SENDER_ID = os.environ.get('FIREBASE_MESSAGING_SENDER_ID')
-            FIREBASE_APP_ID = os.environ.get('FIREBASE_APP_ID')
-    except Exception as e:
-        print(f"Warning: Could not load Firebase credentials: {e}")
-        # Set empty defaults
-        FIREBASE_API_KEY = os.environ.get('FIREBASE_API_KEY')
-        FIREBASE_AUTH_DOMAIN = os.environ.get('FIREBASE_AUTH_DOMAIN')
-        FIREBASE_PROJECT_ID = os.environ.get('FIREBASE_PROJECT_ID')
-        FIREBASE_STORAGE_BUCKET = os.environ.get('FIREBASE_STORAGE_BUCKET')
-        FIREBASE_MESSAGING_SENDER_ID = os.environ.get('FIREBASE_MESSAGING_SENDER_ID')
-        FIREBASE_APP_ID = os.environ.get('FIREBASE_APP_ID')
+    # Firebase Web SDK settings
+    FIREBASE_API_KEY = os.environ.get('FIREBASE_API_KEY')
+    FIREBASE_AUTH_DOMAIN = os.environ.get('FIREBASE_AUTH_DOMAIN')
+    FIREBASE_PROJECT_ID = os.environ.get('FIREBASE_PROJECT_ID')
+    FIREBASE_STORAGE_BUCKET = os.environ.get('FIREBASE_STORAGE_BUCKET')
+    FIREBASE_MESSAGING_SENDER_ID = os.environ.get('FIREBASE_MESSAGING_SENDER_ID')
+    FIREBASE_APP_ID = os.environ.get('FIREBASE_APP_ID')
+
+    # Google AI settings
+    GOOGLE_API_KEY = os.environ.get('GOOGLE_API_KEY')
 
     @staticmethod
     def now():
