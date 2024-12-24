@@ -48,16 +48,17 @@ def process_companion_chat(user_message, user_id, request_id, thread_id=None):
         
         # Convert chat history to Gemini format
         for msg in reversed(chat_history):  # Process from oldest to newest
-            if msg['type'] == 'user':
-                history.append({
-                    "role": "user",
-                    "parts": [msg['content']]
-                })
-            elif msg['type'] == 'ai':
-                history.append({
-                    "role": "model",
-                    "parts": [msg['content']]
-                })
+            if 'type' in msg:
+                if msg['type'] == 'user':
+                    history.append({
+                        "role": "user",
+                        "parts": [msg['content']]
+                    })
+                elif msg['type'] == 'ai':
+                    history.append({
+                        "role": "model",
+                        "parts": [msg['content']]
+                    })
         
         # Generate response with system prompt and user message
         chat = model.start_chat(history=history)
