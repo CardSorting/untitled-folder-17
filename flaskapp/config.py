@@ -15,10 +15,11 @@ class Config:
     REDIS_URL = 'redis://matrixvv-oo6rj9.serverless.usw2.cache.amazonaws.com:6379'
     CHAT_REDIS_URL = 'redis://matrixmm-oo6rj9.serverless.usw2.cache.amazonaws.com:6379'
     CELERY_BROKER_URL = REDIS_URL
-    CELERY_RESULT_BACKEND = REDIS_URL
-    CELERY_TASK_SERIALIZER = 'json'
-    CELERY_RESULT_SERIALIZER = 'json'
-    CELERY_ACCEPT_CONTENT = ['json']
+    result_backend = REDIS_URL
+    task_serializer = 'json'
+    result_serializer = 'json'
+    accept_content = ['json']
+    broker_connection_retry_on_startup = True  # Add this to handle the broker connection retry warning
     CELERY_TASK_ROUTES = {
         'flaskapp.tasks.process_companion_chat': {'queue': 'default'},
         'flaskapp.tasks.process_chat_message': {'queue': 'chat'}
