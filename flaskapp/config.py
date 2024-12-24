@@ -22,8 +22,8 @@ class Config:
     accept_content = ['json']
     broker_connection_retry_on_startup = True
     CELERY_TASK_ROUTES = {
-        'flaskapp.tasks.process_companion_chat': {'queue': 'default'},
-        'flaskapp.tasks.process_chat_message': {'queue': 'chat'}
+        'flaskapp.tasks.companion_tasks.process_companion_chat_task': {'queue': 'default'},
+        'flaskapp.tasks.process_chat_message_task': {'queue': 'chat'}
     }
 
     # Firebase Admin SDK settings

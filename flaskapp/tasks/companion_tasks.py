@@ -27,7 +27,7 @@ Keep your responses deeply empathetic, imbued with a sense of genuine connection
 def register_tasks(celery_app):
     """Register companion-related tasks with Celery"""
     
-    @celery_app.task
+    @celery_app.task(name='flaskapp.tasks.companion_tasks.process_companion_chat_task')
     def process_companion_chat(user_message, user_id, request_id, thread_id):
         """Process companion chat message with Gemini AI synchronously"""
         try:

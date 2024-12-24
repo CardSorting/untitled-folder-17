@@ -168,8 +168,8 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/thread-manager.js') }}"></script>
-<script>
+<script src="{{ url_for('static', filename='js/thread-manager.js') }}" nonce="{{ get_csp_nonce() }}"></script>
+<script nonce="{{ get_csp_nonce() }}">
 document.addEventListener('DOMContentLoaded', function() {
     const threadManager = new ThreadManager();
     const chatForm = document.getElementById('chatForm');

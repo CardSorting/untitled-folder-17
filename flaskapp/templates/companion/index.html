@@ -38,7 +38,7 @@
     </div>
 </div>
 
-<style>
+<style nonce="{{ get_csp_nonce() }}">
 /* Animations */
 @keyframes card-hover {
     0% {
@@ -76,7 +76,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script nonce="{{ get_csp_nonce() }}">
 let isRecording = false;
 let mediaRecorder = null;
 let speechSynthesis = window.speechSynthesis;

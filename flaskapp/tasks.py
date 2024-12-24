@@ -43,7 +43,7 @@ process_companion_chat = companion_task_registry['process_companion_chat']
 
 from .celery_app import celery
 
-__all__ = ['celery']
+__all__ = ['celery', 'process_companion_chat']
 
 if __name__ == '__main__':
     celery.start()

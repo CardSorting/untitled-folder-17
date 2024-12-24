@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{% endblock %} - Matrix Mingle</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
+    <script src="https://cdn.tailwindcss.com" nonce="{{ get_csp_nonce() }}"></script>
+    <script nonce="{{ get_csp_nonce() }}">
         tailwind.config = {
             theme: {
                 extend: {
@@ -28,7 +28,7 @@
         }
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
+    <style nonce="{{ get_csp_nonce() }}">
         body {
             font-family: 'Inter', sans-serif;
         }
@@ -223,11 +223,11 @@
     </footer>
 
     <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js" nonce="{{ get_csp_nonce() }}"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js" nonce="{{ get_csp_nonce() }}"></script>
     
     <!-- Initialize Firebase -->
-    <script>
+    <script nonce="{{ get_csp_nonce() }}">
         const firebaseConfig = {
             apiKey: "{{ config.FIREBASE_API_KEY }}",
             authDomain: "{{ config.FIREBASE_AUTH_DOMAIN }}",
@@ -245,8 +245,8 @@
             });
     </script>
 
-    <!-- Main JS -->
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <!-- Main JavaScript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}" nonce="{{ get_csp_nonce() }}"></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

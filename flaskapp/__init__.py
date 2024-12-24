@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, request
 from flask_login import LoginManager
 from .config import Config
 import os
@@ -21,6 +21,70 @@ def create_app(config_class=Config):
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
 
+    # Add CSP nonce to each request
+    @app.before_request
+    def add_csp_nonce():
+        request.csp_nonce = os.urandom(16).hex()
+
+    # Add Content Security Policy headers
+    @app.after_request
+    def add_security_headers(response):
+        nonce = getattr(request, 'csp_nonce', '')
+        
+        csp = {
+            'default-src': ["'self'"],
+            'script-src': [
+                "'self'",
+                f"'nonce-{nonce}'",
+                "'unsafe-eval'",
+                "https://cdn.tailwindcss.com",
+                "https://www.gstatic.com",
+                "https://*.googleapis.com",
+                "https://apis.google.com"
+            ],
+            'style-src': [
+                "'self'",
+                "'unsafe-inline'",
+                "https://fonts.googleapis.com",
+                "https://cdn.tailwindcss.com"
+            ],
+            'font-src': [
+                "'self'",
+                "data:",
+                "https://fonts.gstatic.com"
+            ],
+            'img-src': ["'self'", "data:", "https:"],
+            'connect-src': [
+                "'self'", 
+                "https://*.googleapis.com",
+                "https://www.googleapis.com",
+                "https://apis.google.com",
+                "https://*.firebaseapp.com",
+                "https://*.firebase.com"
+            ],
+            'frame-src': [
+                "'self'",
+                "https://apis.google.com",
+                "https://*.firebaseapp.com",
+                "https://*.firebase.com"
+            ],
+            'worker-src': ["'self'", "blob:"],
+            'child-src': ["'self'", "blob:"],
+            'form-action': ["'self'"],
+            'base-uri': ["'self'"],
+            'object-src': ["'none'"]
+        }
+        
+        # Build the CSP header string
+        csp_string = '; '.join(f"{key} {' '.join(values)}" for key, values in csp.items())
+        response.headers['Content-Security-Policy'] = csp_string
+        
+        # Add SameSite cookie policy
+        if 'Set-Cookie' in response.headers:
+            response.headers['Set-Cookie'] += '; SameSite=Lax'
+        
+        return response
+
     # Initialize Redis
     app.redis = Redis.from_url(app.config['REDIS_URL'])
     app.chat_redis = Redis.from_url(app.config['CHAT_REDIS_URL'])
@@ -40,7 +104,9 @@ def create_app(config_class=Config):
 
     @app.context_processor
     def utility_processor():
-        return dict(now=Config.now)
+        def get_csp_nonce():
+            return getattr(request, 'csp_nonce', '')
+        return dict(now=Config.now, get_csp_nonce=get_csp_nonce)
 
     # Create temp directory for audio files
     temp_dir = os.path.join(app.static_folder, 'temp')

@@ -30,4 +30,4 @@ celery = make_celery(flask_app)
 
 # Import tasks to register them
 from .tasks import companion_tasks
-companion_task_registry = companion_tasks.register_tasks(celery)
+companion_tasks.register_tasks(celery)
