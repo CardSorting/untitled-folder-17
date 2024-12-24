@@ -79,6 +79,12 @@ let mediaRecorder = null;
 let speechSynthesis = window.speechSynthesis;
 let voices = [];
 let recognition = null;
+let audioContext = null;
+let analyser = null;
+let silenceStart = null;
+let silenceThreshold = -65; // dB threshold for silence detection
+let silenceDuration = 2000; // Duration of silence before stopping (ms)
+let audioDetectionInterval = null;
 
 // Load voices
 function loadVoices() {
@@ -203,6 +209,76 @@ function initializeSpeechRecognition() {
 }
 
 
+function detectSilence(stream) {
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    
+    const source = audioContext.createMediaStreamSource(stream);
+    analyser = audioContext.createAnalyser();
+    analyser.fftSize = 2048;
+    source.connect(analyser);
+
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Float32Array(bufferLength);
+
+    audioDetectionInterval = setInterval(() => {
+        analyser.getFloatFrequencyData(dataArray);
+        
+        // Calculate average volume level in dB
+        const average = dataArray.reduce((sum, value) => sum + value, 0) / bufferLength;
+        
+        if (average < silenceThreshold) {
+            if (!silenceStart) {
+                silenceStart = Date.now();
+            } else if (Date.now() - silenceStart > silenceDuration) {
+                console.log('Silence detected, stopping recording');
+                stopRecording();
+            }
+        } else {
+            silenceStart = null;
+        }
+    }, 100);
+}
+
+function stopRecording() {
+    if (!isRecording) return;
+    
+    isRecording = false;
+    const button = document.getElementById('micButton');
+    const status = document.getElementById('status');
+    const recordingIndicator = document.getElementById('recordingIndicator');
+
+    button.classList.remove('bg-red-600', 'hover:bg-red-700');
+    button.classList.add('bg-primary-600', 'hover:bg-primary-700');
+    button.innerHTML = `
+        <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+        </svg>
+        Start Recording
+    `;
+    status.textContent = '';
+    recordingIndicator.classList.add('hidden');
+    
+    if (recognition) {
+        recognition.stop();
+    }
+
+    if (audioDetectionInterval) {
+        clearInterval(audioDetectionInterval);
+        audioDetectionInterval = null;
+    }
+
+    if (audioContext) {
+        if (analyser) {
+            analyser.disconnect();
+            analyser = null;
+        }
+    }
+
+    silenceStart = null;
+}
+
 function toggleRecording() {
     const button = document.getElementById('micButton');
     const status = document.getElementById('status');
@@ -228,12 +304,12 @@ function toggleRecording() {
                 </svg>
                 Stop Recording
             `;
-            status.textContent = 'Recording... Speak clearly into your microphone';
+            status.textContent = 'Recording... Speak clearly into your microphone (will auto-stop after silence)';
             status.className = 'text-sm text-green-600 italic font-medium';
             recordingIndicator.classList.remove('hidden');
             
             recognition.start();
-            
+            detectSilence(stream);
         })
         .catch(error => {
             console.error('Error accessing microphone:', error);
@@ -242,21 +318,7 @@ function toggleRecording() {
             showError('Please ensure your microphone is connected and you have granted permission to use it.');
         });
     } else {
-        isRecording = false;
-        button.classList.remove('bg-red-600', 'hover:bg-red-700');
-        button.classList.add('bg-primary-600', 'hover:bg-primary-700');
-        button.innerHTML = `
-            <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-            </svg>
-            Start Recording
-        `;
-        status.textContent = '';
-        recordingIndicator.classList.add('hidden');
-        
-        if (recognition) {
-            recognition.stop();
-        }
+        stopRecording();
     }
 }
 
