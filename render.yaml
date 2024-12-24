@@ -23,6 +23,22 @@ services:
           name: flask-redis
           type: redis
           property: connectionString
+      # Firebase Web SDK Configuration
+      - key: FIREBASE_API_KEY
+        value: AIzaSyD3DQtGspj3lNugVxx7y1_9xp6jHSbObho
+      - key: FIREBASE_AUTH_DOMAIN
+        value: irlmbm.firebaseapp.com
+      - key: FIREBASE_PROJECT_ID
+        value: irlmbm
+      - key: FIREBASE_STORAGE_BUCKET
+        value: irlmbm.appspot.com
+      - key: FIREBASE_MESSAGING_SENDER_ID
+        value: 982307418356
+      - key: FIREBASE_APP_ID
+        value: 1:982307418356:web:9ccb5775638f5fb40c2ea1
+      # Google AI Configuration
+      - key: GOOGLE_API_KEY
+        value: AIzaSyCFDHM6Gti_sKFaPHkEAcYz5pp5T2b4OWs
 
   # Redis instance
   - type: redis
