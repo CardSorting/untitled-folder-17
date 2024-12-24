@@ -82,6 +82,16 @@ class User(UserMixin):
 
     def get_chat_history(self, limit=50, thread_id=None):
         """Get user's chat history"""
+        from flask import current_app
+        import json
+        redis_client = current_app.redis
+        
+        cache_key = f"chat_history:{self.firebase_uid}:{thread_id or 'all'}:{limit}"
+        cached_messages = redis_client.get(cache_key)
+        
+        if cached_messages:
+            return json.loads(cached_messages)
+        
         db = firestore.client()
         messages_ref = (db.collection('users')
                        .document(self.firebase_uid)
@@ -98,6 +108,8 @@ class User(UserMixin):
             message_data = doc.to_dict()
             message_data['id'] = doc.id
             messages.append(message_data)
+        
+        redis_client.set(cache_key, json.dumps(messages), ex=3600) # Cache for 1 hour
         
         return messages
 

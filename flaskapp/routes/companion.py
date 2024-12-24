@@ -17,6 +17,12 @@ def companion():
     """Render the AI companion page."""
     return render_template('companion/index.html')
 
+@companion_bp.route('/chat-text')
+@login_required
+def companion_chat_text():
+    """Render the AI companion text chat page."""
+    return render_template('companion/chat.html')
+
 @companion_bp.route('/chat', methods=['POST'])
 @login_required
 def chat():
@@ -26,6 +32,7 @@ def chat():
         user_message = data.get('message')
         request_id = data.get('request_id')
         thread_id = data.get('thread_id')
+        message_type = data.get('type', 'voice') # Default to voice if type is not provided
         
         if not user_message:
             return jsonify({'error': 'No message provided', 'request_id': request_id}), 400
@@ -34,10 +41,18 @@ def chat():
             return jsonify({'error': 'No request ID provided'}), 400
 
         # Process chat message
-        from ..tasks import process_companion_chat
-        result = process_companion_chat(user_message, current_user.firebase_uid, request_id, thread_id)
+        if message_type == 'text':
+            from ..tasks import process_chat_message
+            result = process_chat_message.delay(user_message, current_user.firebase_uid, request_id, thread_id)
+        else:
+            from ..tasks import process_companion_chat
+            result = process_companion_chat.delay(user_message, current_user.firebase_uid, request_id, thread_id)
         
-        return jsonify(result)
+        return jsonify({
+            'success': True,
+            'request_id': request_id,
+            'task_id': result.id
+        })
 
     except Exception as e:
         current_app.logger.error(f"Error in chat endpoint: {str(e)}")

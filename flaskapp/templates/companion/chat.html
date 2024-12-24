@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}AI Companion Chat{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Chat Header -->
+    <div class="bg-white rounded-t-lg shadow-sm p-4 border-b">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Text Chat</h1>
+                <p class="text-gray-500 mt-1">Chat with Synthia</p>
+            </div>
+            <div class="relative">
+                <button id="threadDropdownButton" class="inline-flex justify-center w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500" aria-haspopup="true" aria-expanded="false">
+                    Select Thread
+                    <svg class="-mr-1 ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+                <div id="threadDropdown" class="hidden absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none" role="menu" aria-orientation="vertical" aria-labelledby="threadDropdownButton">
+                    <div class="py-1" role="none">
+                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem">New Thread</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Messages -->
+    <div class="bg-gray-50 h-[500px] overflow-y-auto p-4 space-y-4" id="chatMessages">
+        <!-- Welcome Message -->
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <div class="h-10 w-10 rounded-full bg-primary-500 flex items-center justify-center">
+                    <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                    </svg>
+                </div>
+            </div>
+            <div class="ml-3">
+                <div class="bg-white rounded-lg shadow-sm p-4 max-w-lg">
+                    <p class="text-gray-900">Hello! I'm your AI companion. Type a message below to chat with me.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Input -->
+    <div class="bg-white rounded-b-lg shadow-sm p-4 border-t">
+        <div class="flex items-center">
+            <input type="text" id="messageInput" class="flex-grow border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="Type your message here...">
+            <button id="sendButton" class="ml-2 px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                Send
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentThreadId = null;
+
+document.getElementById('sendButton').addEventListener('click', sendMessage);
+document.getElementById('threadDropdownButton').addEventListener('click', toggleThreadDropdown);
+document.querySelector('#threadDropdown a').addEventListener('click', createNewThread);
+
+function toggleThreadDropdown() {
+    const dropdown = document.getElementById('threadDropdown');
+    dropdown.classList.toggle('hidden');
+}
+
+function createNewThread(event) {
+    event.preventDefault();
+    currentThreadId = uuidv4();
+    document.getElementById('threadDropdown').classList.add('hidden');
+    document.getElementById('chatMessages').innerHTML = '';
+    fetchChatHistory(currentThreadId);
+}
+
+function fetchChatHistory(threadId = null) {
+    const chatMessages = document.getElementById('chatMessages');
+    chatMessages.innerHTML = '';
+    
+    let url = '/companion/history';
+    if (threadId) {
+        url += `?thread_id=${threadId}`;
+    }
+
+    fetch(url)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.messages) {
+                data.messages.forEach(message => {
+                    addMessage(message, message.type);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching chat history:', error);
+            showError('Error fetching chat history. Please try again.');
+        });
+}
+
+function uuidv4() {
+    return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+    );
+}
+
+const pendingRequests = new Map();
+
+async function sendMessage() {
+    const messageInput = document.getElementById('messageInput');
+    const message = messageInput.value.trim();
+    if (!message) return;
+
+    const requestId = uuidv4();
+    const timestamp = Date.now();
+    
+    pendingRequests.set(requestId, {
+        message,
+        timestamp
+    });
+
+    addMessage(message, 'user');
+    messageInput.value = '';
+
+    fetch('/companion/chat', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+            message: message,
+            request_id: requestId,
+            thread_id: currentThreadId
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (pendingRequests.has(data.request_id)) {
+            const request = pendingRequests.get(data.request_id);
+            const timeDiff = Date.now() - request.timestamp;
+            if (timeDiff < 30000) {
+                addMessage(data, 'ai');
+            } else {
+                console.log('Discarding old response:', data.request_id);
+            }
+            pendingRequests.delete(data.request_id);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showError('Error getting AI response. Please try again.');
+        pendingRequests.delete(requestId);
+    });
+
+    const now = Date.now();
+    for (const [id, request] of pendingRequests.entries()) {
+        if (now - request.timestamp > 30000) {
+            pendingRequests.delete(id);
+        }
+    }
+}
+
+function addMessage(message, type) {
+    const chatMessages = document.getElementById('chatMessages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'flex items-start ' + (type === 'user' ? 'justify-end' : '');
+    
+    const content = `
+        ${type === 'user' ? '' : `
+        <div class="flex-shrink-0">
+            <div class="h-10 w-10 rounded-full bg-primary-500 flex items-center justify-center">
+                <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                </svg>
+            </div>
+        </div>
+        `}
+        <div class="${type === 'user' ? 'mr-3' : 'ml-3'}">
+            <div class="${type === 'user' ? 'bg-primary-600 text-white' : 'bg-white'} rounded-lg shadow-sm p-4 max-w-lg">
+                <p class="${type === 'user' ? 'text-white' : 'text-gray-900'}">${type === 'user' ? message : message.message}</p>
+            </div>
+        </div>
+    `;
+    
+    messageDiv.innerHTML = content;
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function showError(message) {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'flex items-start mb-4';
+    errorDiv.innerHTML = `
+        <div class="flex-shrink-0">
+            <div class="h-10 w-10 rounded-full bg-red-500 flex items-center justify-center">
+                <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+        </div>
+        <div class="ml-3">
+            <div class="bg-red-50 text-red-700 rounded-lg shadow-sm p-4 max-w-lg">
+                <p>${message}</p>
+            </div>
+        </div>
+    `;
+    
+    const chatMessages = document.getElementById('chatMessages');
+    chatMessages.appendChild(errorDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+fetchChatHistory();
+</script>
+{% endblock %}
