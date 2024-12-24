@@ -25,22 +25,12 @@ def make_celery(app):
             'visibility_timeout': 3600,  # 1 hour
             'socket_timeout': 30,
             'socket_connect_timeout': 30,
-            'socket_keepalive': True,
-            'socket_keepalive_options': {
-                'TCP_KEEPIDLE': 60,
-                'TCP_KEEPINTVL': 10,
-                'TCP_KEEPCNT': 9
-            }
+            'socket_keepalive': True
         },
         redis_retry_on_timeout=True,
         redis_socket_timeout=30,
         redis_socket_connect_timeout=30,
-        redis_socket_keepalive=True,
-        redis_socket_keepalive_options={
-            'TCP_KEEPIDLE': 60,
-            'TCP_KEEPINTVL': 10,
-            'TCP_KEEPCNT': 9
-        }
+        redis_socket_keepalive=True
     )
     
     class ContextTask(celery.Task):
