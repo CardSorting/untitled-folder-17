@@ -12,8 +12,8 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # Redis and Celery settings
-    REDIS_URL = 'redis://matrixvv-oo6rj9.serverless.usw2.cache.amazonaws.com:6379'
-    CHAT_REDIS_URL = 'redis://matrixmm-oo6rj9.serverless.usw2.cache.amazonaws.com:6379'
+    REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379')
+    CHAT_REDIS_URL = os.environ.get('CHAT_REDIS_URL', REDIS_URL)
     CELERY_BROKER_URL = REDIS_URL
     broker_url = REDIS_URL
     result_backend = REDIS_URL

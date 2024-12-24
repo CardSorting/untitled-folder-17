@@ -113,7 +113,7 @@ class User(UserMixin):
             
             if thread_id:
                 try:
-                    messages_ref = messages_ref.where('thread_id', '==', thread_id)
+                    messages_ref = messages_ref.where(field_path='thread_id', op_string='==', value=thread_id)
                 except Exception as e:
                     if "The query requires an index" in str(e):
                         # Fall back to getting all messages and filtering in memory
