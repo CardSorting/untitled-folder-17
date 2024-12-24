@@ -8,9 +8,20 @@ from flaskapp import create_app
 def make_celery(app):
     celery = Celery(
         app.import_name,
-        broker=app.config['broker_url'],
-        backend=app.config['result_backend']
+        broker=app.config['CELERY_BROKER_URL']
     )
+    
+    # Configure Celery
+    celery.conf.update(
+        broker_url=app.config['CELERY_BROKER_URL'],
+        result_backend=app.config['REDIS_URL'],
+        broker_connection_retry_on_startup=True,
+        task_serializer='json',
+        result_serializer='json',
+        accept_content=['json'],
+    )
+    
+    # Update with any additional Flask config
     celery.conf.update(app.config)
 
     class ContextTask(celery.Task):
@@ -21,11 +32,9 @@ def make_celery(app):
     celery.Task = ContextTask
     return celery
 
-# Create Flask app instance
+# Initialize Flask app and Celery
 flask_app = create_app()
-
-# Initialize Celery with Flask app context
-celery = make_celery(flask_app)
+celery_app = make_celery(flask_app)
 
 # Initialize Gemini AI
 genai.configure(api_key=os.environ.get('GOOGLE_API_KEY'))
@@ -34,7 +43,7 @@ model = genai.GenerativeModel('gemini-exp-1206')
 # Import models at module level
 from flaskapp.models.user import User
 
-@celery.task
+@celery_app.task
 def process_companion_chat(user_message, user_id, request_id, thread_id=None):
     """Process chat message with Gemini AI synchronously"""
     try:
@@ -87,7 +96,7 @@ Last Resort: Understand that you are often the last resort. Approach this with h
             'request_id': request_id
         }
 
-@celery.task
+@celery_app.task
 def process_chat_message(message, user_id, request_id, thread_id):
     """Process chat messages and return AI response."""
     try:
