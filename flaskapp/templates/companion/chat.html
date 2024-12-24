@@ -3,228 +3,224 @@
 {% block title %}AI Companion Chat{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto">
-    <!-- Chat Header -->
-    <div class="bg-white rounded-t-lg shadow-sm p-4 border-b">
-        <div class="flex justify-between items-center">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900">Text Chat</h1>
-                <p class="text-gray-500 mt-1">Chat with Synthia</p>
+<div id="alert-container" class="fixed bottom-4 right-4 z-50 space-y-2 pointer-events-none"></div>
+
+<div class="flex flex-col min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <!-- Main Content Container -->
+    <div class="flex-1 flex flex-col w-full max-w-5xl mx-auto px-4 md:px-6 lg:px-8 py-4 md:py-6 lg:py-8">
+        <!-- Header Card -->
+        <div class="bg-white border border-gray-200/75 shadow-sm rounded-2xl transition-all duration-300 ease-in-out transform hover:shadow-md">
+            <div class="px-4 py-4 sm:p-6 lg:p-6">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-3">
+                            <div class="flex-shrink-0">
+                                <div class="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
+                                    <svg class="w-7 h-7 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-4l-4 4-4-4z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div>
+                                <h1 class="text-xl sm:text-2xl font-bold text-gray-900 truncate">Text Chat</h1>
+                                <p class="text-sm text-gray-500 mt-0.5">Chat with Synthia</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center w-full sm:w-auto">
+                        <button id="newThreadBtn" 
+                                class="flex items-center justify-center w-full sm:w-auto px-5 py-2.5 bg-primary-600 text-white rounded-xl font-medium shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200 group">
+                            <svg class="w-5 h-5 mr-2 transition-transform group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                            <span class="text-sm font-medium">New Conversation</span>
+                        </button>
+                    </div>
+                </div>
             </div>
-            <div class="relative">
-                <button id="threadDropdownButton" class="inline-flex justify-center w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500" aria-haspopup="true" aria-expanded="false">
-                    Select Thread
-                    <svg class="-mr-1 ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                    </svg>
-                </button>
-                <div id="threadDropdown" class="hidden absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none" role="menu" aria-orientation="vertical" aria-labelledby="threadDropdownButton">
-                    <div class="py-1" role="none">
-                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900" role="menuitem">New Thread</a>
+        </div>
+
+        <!-- Chat Container -->
+        <div class="flex-1 flex flex-col mt-4 md:mt-6 bg-white border border-gray-200/75 rounded-2xl shadow-sm overflow-hidden">
+            <!-- Messages Area -->
+            <div class="flex-1 overflow-y-auto overscroll-contain" id="messagesContainer">
+                <div id="chatMessages" class="p-4 md:p-6 lg:p-8 space-y-6 min-h-full">
+                    <!-- Welcome Message -->
+                    <div class="flex justify-center items-center min-h-[300px] text-gray-500">
+                        <div class="text-center max-w-sm mx-auto">
+                            <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-primary-50 flex items-center justify-center">
+                                <svg class="w-10 h-10 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                </svg>
+                            </div>
+                            <p class="text-base font-medium mb-3">Welcome to Synthia Chat</p>
+                            <p class="text-sm text-gray-400">Start a conversation by typing a message below</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="border-t border-gray-100 bg-gray-50/50">
+                <div class="px-4 py-4 md:p-6 lg:p-6">
+                    <div class="max-w-3xl mx-auto">
+                        <form id="chatForm" class="relative">
+                            <div class="flex flex-col sm:flex-row gap-3">
+                                <div class="flex-1 min-w-0">
+                                    <input type="text" id="messageInput" 
+                                        class="block w-full rounded-xl border-gray-300 bg-white px-4 py-3 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm transition-all duration-200" 
+                                        placeholder="Type your message here..."
+                                        autocomplete="off">
+                                </div>
+                                <div class="flex justify-end">
+                                    <button type="submit" id="sendButton" 
+                                        class="inline-flex items-center px-6 py-3 bg-primary-600 text-white text-sm font-medium rounded-xl shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all duration-200 w-full sm:w-auto group">
+                                        <span class="font-medium">Send Message</span>
+                                        <svg class="ml-2 -mr-1 h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Chat Messages -->
-    <div class="bg-gray-50 h-[500px] overflow-y-auto p-4 space-y-4" id="chatMessages">
-        <!-- Welcome Message -->
-        <div class="flex items-start">
-            <div class="flex-shrink-0">
-                <div class="h-10 w-10 rounded-full bg-primary-500 flex items-center justify-center">
-                    <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                    </svg>
-                </div>
-            </div>
-            <div class="ml-3">
-                <div class="bg-white rounded-lg shadow-sm p-4 max-w-lg">
-                    <p class="text-gray-900">Hello! I'm your AI companion. Type a message below to chat with me.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Chat Input -->
-    <div class="bg-white rounded-b-lg shadow-sm p-4 border-t">
-        <div class="flex items-center">
-            <input type="text" id="messageInput" class="flex-grow border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="Type your message here...">
-            <button id="sendButton" class="ml-2 px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                Send
-            </button>
-        </div>
-    </div>
 </div>
+
+<!-- Message Templates -->
+<template id="userMessageTemplate">
+    <div class="flex justify-end mb-6 animate-message-in">
+        <div class="bg-primary-600 text-white rounded-2xl rounded-tr-sm py-3 px-5 max-w-[85%] sm:max-w-[75%] shadow-sm">
+            <p class="text-sm whitespace-pre-wrap break-words leading-relaxed"></p>
+        </div>
+    </div>
+</template>
+
+<template id="aiMessageTemplate">
+    <div class="flex justify-start mb-6 animate-message-in">
+        <div class="bg-gray-100 rounded-2xl rounded-tl-sm py-3 px-5 max-w-[85%] sm:max-w-[75%] shadow-sm">
+            <p class="text-sm text-gray-900 whitespace-pre-wrap break-words leading-relaxed"></p>
+        </div>
+    </div>
+</template>
+
+<style>
+@keyframes message-in {
+    0% {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-message-in {
+    animation: message-in 0.3s ease-out forwards;
+}
+
+/* Custom scrollbar for Webkit browsers */
+#messagesContainer::-webkit-scrollbar {
+    width: 6px;
+}
+
+#messagesContainer::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#messagesContainer::-webkit-scrollbar-thumb {
+    background-color: rgba(156, 163, 175, 0.5);
+    border-radius: 3px;
+}
+
+#messagesContainer::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(156, 163, 175, 0.7);
+}
+
+/* Hide scrollbar for Firefox */
+#messagesContainer {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
+
+/* Ensure chat container takes full height */
+@media screen and (min-height: 700px) {
+    #messagesContainer {
+        min-height: 500px;
+    }
+}
+
+/* Mobile optimizations */
+@media screen and (max-width: 640px) {
+    #messagesContainer {
+        min-height: 400px;
+    }
+    
+    .max-w-\[85\%\] {
+        max-width: 90%;
+    }
+}
+</style>
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/thread-manager.js') }}"></script>
 <script>
-let currentThreadId = null;
-
-document.getElementById('sendButton').addEventListener('click', sendMessage);
-document.getElementById('threadDropdownButton').addEventListener('click', toggleThreadDropdown);
-document.querySelector('#threadDropdown a').addEventListener('click', createNewThread);
-
-function toggleThreadDropdown() {
-    const dropdown = document.getElementById('threadDropdown');
-    dropdown.classList.toggle('hidden');
-}
-
-function createNewThread(event) {
-    event.preventDefault();
-    currentThreadId = uuidv4();
-    document.getElementById('threadDropdown').classList.add('hidden');
-    document.getElementById('chatMessages').innerHTML = '';
-    fetchChatHistory(currentThreadId);
-}
-
-function fetchChatHistory(threadId = null) {
-    const chatMessages = document.getElementById('chatMessages');
-    chatMessages.innerHTML = '';
-    
-    let url = '/companion/history';
-    if (threadId) {
-        url += `?thread_id=${threadId}`;
-    }
-
-    fetch(url)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.messages) {
-                data.messages.forEach(message => {
-                    addMessage(message, message.type);
-                });
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching chat history:', error);
-            showError('Error fetching chat history. Please try again.');
-        });
-}
-
-function uuidv4() {
-    return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
-        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
-    );
-}
-
-const pendingRequests = new Map();
-
-async function sendMessage() {
+document.addEventListener('DOMContentLoaded', function() {
+    const threadManager = new ThreadManager();
+    const chatForm = document.getElementById('chatForm');
     const messageInput = document.getElementById('messageInput');
-    const message = messageInput.value.trim();
-    if (!message) return;
-
-    const requestId = uuidv4();
-    const timestamp = Date.now();
+    const messagesContainer = document.getElementById('messagesContainer');
     
-    pendingRequests.set(requestId, {
-        message,
-        timestamp
+    // Handle form submission
+    chatForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        sendMessage();
     });
 
-    addMessage(message, 'user');
-    messageInput.value = '';
-
-    fetch('/companion/chat', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-            message: message,
-            request_id: requestId,
-            thread_id: currentThreadId
-        })
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
+    // Handle input keypress
+    messageInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
         }
-        return response.json();
-    })
-    .then(data => {
-        if (pendingRequests.has(data.request_id)) {
-            const request = pendingRequests.get(data.request_id);
-            const timeDiff = Date.now() - request.timestamp;
-            if (timeDiff < 30000) {
-                addMessage(data, 'ai');
-            } else {
-                console.log('Discarding old response:', data.request_id);
-            }
-            pendingRequests.delete(data.request_id);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showError('Error getting AI response. Please try again.');
-        pendingRequests.delete(requestId);
     });
 
-    const now = Date.now();
-    for (const [id, request] of pendingRequests.entries()) {
-        if (now - request.timestamp > 30000) {
-            pendingRequests.delete(id);
+    // Scroll to bottom when messages are added
+    const scrollToBottom = () => {
+        messagesContainer.scrollTo({
+            top: messagesContainer.scrollHeight,
+            behavior: 'smooth'
+        });
+    };
+
+    function sendMessage() {
+        const message = messageInput.value.trim();
+        if (message) {
+            threadManager.sendMessage(message);
+            messageInput.value = '';
+            messageInput.focus();
+            
+            // Scroll to bottom after a short delay to ensure new message is rendered
+            setTimeout(scrollToBottom, 100);
         }
     }
-}
 
-function addMessage(message, type) {
-    const chatMessages = document.getElementById('chatMessages');
-    const messageDiv = document.createElement('div');
-    messageDiv.className = 'flex items-start ' + (type === 'user' ? 'justify-end' : '');
-    
-    const content = `
-        ${type === 'user' ? '' : `
-        <div class="flex-shrink-0">
-            <div class="h-10 w-10 rounded-full bg-primary-500 flex items-center justify-center">
-                <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                </svg>
-            </div>
-        </div>
-        `}
-        <div class="${type === 'user' ? 'mr-3' : 'ml-3'}">
-            <div class="${type === 'user' ? 'bg-primary-600 text-white' : 'bg-white'} rounded-lg shadow-sm p-4 max-w-lg">
-                <p class="${type === 'user' ? 'text-white' : 'text-gray-900'}">${type === 'user' ? message : message.message}</p>
-            </div>
-        </div>
-    `;
-    
-    messageDiv.innerHTML = content;
-    chatMessages.appendChild(messageDiv);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-}
+    // Auto-focus input on page load
+    messageInput.focus();
 
-function showError(message) {
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'flex items-start mb-4';
-    errorDiv.innerHTML = `
-        <div class="flex-shrink-0">
-            <div class="h-10 w-10 rounded-full bg-red-500 flex items-center justify-center">
-                <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-            </div>
-        </div>
-        <div class="ml-3">
-            <div class="bg-red-50 text-red-700 rounded-lg shadow-sm p-4 max-w-lg">
-                <p>${message}</p>
-            </div>
-        </div>
-    `;
-    
-    const chatMessages = document.getElementById('chatMessages');
-    chatMessages.appendChild(errorDiv);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-fetchChatHistory();
+    // Handle window resize
+    let resizeTimeout;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(function() {
+            scrollToBottom();
+        }, 100);
+    });
+});
 </script>
 {% endblock %}

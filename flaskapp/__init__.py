@@ -2,6 +2,7 @@ from flask import Flask
 from flask_login import LoginManager
 from .config import Config
 import os
+from redis import Redis
 
 login_manager = LoginManager()
 
@@ -19,6 +20,10 @@ def create_app(config_class=Config):
     # Initialize Flask-Login
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
+
+    # Initialize Redis
+    app.redis = Redis.from_url(app.config['REDIS_URL'])
+    app.chat_redis = Redis.from_url(app.config['CHAT_REDIS_URL'])
 
     # Initialize Firebase
     from .utils.firebase import initialize_firebase
