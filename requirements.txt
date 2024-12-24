@@ -15,3 +15,5 @@ kombu==5.4.2
 vine==5.1.0
 redis==5.0.2
 rq==1.15.0
+gunicorn==21.2.0
+gevent==23.9.1

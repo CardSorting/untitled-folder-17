@@ -1,0 +1,56 @@
+services:
+  # Web Service
+  - type: web
+    name: flask-app
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn "flaskapp:create_app()" --config gunicorn.conf.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: flask-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: flask-redis
+          type: redis
+          property: connectionString
+
+  # Celery Worker
+  - type: worker
+    name: celery-worker
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: celery -A flaskapp.celery_app worker --loglevel=info
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: SECRET_KEY
+        sync: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: flask-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: flask-redis
+          type: redis
+          property: connectionString
+
+  # Redis instance
+  - type: redis
+    name: flask-redis
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: everywhere
+    plan: free
+
+databases:
+  - name: flask-db
+    databaseName: flaskdb
+    user: flask_user
+    plan: free
