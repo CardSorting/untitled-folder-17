@@ -103,35 +103,56 @@ class User(UserMixin):
         except:
             current_app.logger.warning("Redis not configured, skipping cache")
         
-        # Get messages from Firestore
-        db = firestore.client()
-        messages_ref = (db.collection('users')
-                       .document(self.firebase_uid)
-                       .collection('messages')
-                       .order_by('timestamp', direction=firestore.Query.DESCENDING))
-        
-        if thread_id:
-            messages_ref = messages_ref.where('thread_id', '==', thread_id)
-            
-        messages_ref = messages_ref.limit(limit)
-        
-        messages = []
-        for doc in messages_ref.stream():
-            message_data = doc.to_dict()
-            message_data['id'] = doc.id
-            messages.append(message_data)
-        
-        # Sort messages by timestamp
-        messages.sort(key=lambda x: x['timestamp'])
-        
-        # Try to cache the result if Redis is available
         try:
-            redis_client = current_app.redis
-            redis_client.set(cache_key, json.dumps(messages), ex=3600)  # Cache for 1 hour
-        except:
-            pass
+            # Get messages from Firestore
+            db = firestore.client()
+            messages_ref = (db.collection('users')
+                          .document(self.firebase_uid)
+                          .collection('messages')
+                          .order_by('timestamp', direction=firestore.Query.DESCENDING))
             
-        return messages
+            if thread_id:
+                try:
+                    messages_ref = messages_ref.where('thread_id', '==', thread_id)
+                except Exception as e:
+                    if "The query requires an index" in str(e):
+                        # Fall back to getting all messages and filtering in memory
+                        current_app.logger.warning("Firestore index not yet ready, falling back to in-memory filtering")
+                        all_messages = messages_ref.limit(limit * 2).stream()  # Get more messages to account for filtering
+                        messages = []
+                        for doc in all_messages:
+                            message_data = doc.to_dict()
+                            if message_data.get('thread_id') == thread_id:
+                                message_data['id'] = doc.id
+                                messages.append(message_data)
+                        messages = messages[:limit]  # Limit after filtering
+                        messages.sort(key=lambda x: x['timestamp'])
+                        return messages
+                    raise
+                    
+            messages_ref = messages_ref.limit(limit)
+            
+            messages = []
+            for doc in messages_ref.stream():
+                message_data = doc.to_dict()
+                message_data['id'] = doc.id
+                messages.append(message_data)
+            
+            # Sort messages by timestamp
+            messages.sort(key=lambda x: x['timestamp'])
+            
+            # Try to cache the result if Redis is available
+            try:
+                redis_client = current_app.redis
+                redis_client.set(cache_key, json.dumps(messages), ex=3600)  # Cache for 1 hour
+            except:
+                pass
+                
+            return messages
+            
+        except Exception as e:
+            current_app.logger.error(f"Error fetching chat history: {str(e)}")
+            return []  # Return empty list on error
 
     def update_profile(self, data):
         """Update user profile data"""
