@@ -112,6 +112,7 @@ const SessionManager = {
 document.addEventListener('DOMContentLoaded', () => {
     const loginBtn = document.getElementById('login');
     const logoutForm = document.getElementById('logout-form');
+    const auth = firebase.auth();  // Get the auth instance
     
     loginBtn?.addEventListener('click', async () => {
         try {
