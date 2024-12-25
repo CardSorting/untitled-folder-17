@@ -82,3 +82,19 @@ def get_chat_history():
     except Exception as e:
         current_app.logger.error(f"Error getting chat history: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+@companion_bp.route('/task-status/<task_id>')
+@login_required
+def task_status(task_id):
+    """Check the status of a Celery task."""
+    from ..tasks import process_companion_chat
+    
+    try:
+        result = process_companion_chat.AsyncResult(task_id)
+        if result.ready():
+            response = result.get()
+            return jsonify(response)
+        return jsonify({'status': 'pending'})
+    except Exception as e:
+        current_app.logger.error(f"Error checking task status: {str(e)}")
+        return jsonify({'error': str(e)}), 500
