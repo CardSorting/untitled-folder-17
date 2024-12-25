@@ -27,7 +27,7 @@ class Config:
     }
 
     # Firebase Admin SDK settings
-    FIREBASE_CREDENTIALS_PATH = None
+    FIREBASE_CREDENTIALS_PATH = os.path.join(os.path.dirname(basedir), 'firebase-credentials.json')
     FIREBASE_CREDENTIALS = None
     
     # Try to load Firebase credentials from environment variable
