@@ -98,3 +98,33 @@ def task_status(task_id):
     except Exception as e:
         current_app.logger.error(f"Error checking task status: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+@companion_bp.route('/stream')
+@login_required
+def stream():
+    """SSE endpoint for real-time updates."""
+    def generate():
+        pubsub = current_app.redis.pubsub()
+        channel = f"user:{current_user.firebase_uid}:updates"
+        pubsub.subscribe(channel)
+        
+        try:
+            while True:
+                message = pubsub.get_message()
+                if message and message['type'] == 'message':
+                    data = message['data'].decode('utf-8')
+                    yield f"data: {data}\n\n"
+                
+        finally:
+            pubsub.unsubscribe(channel)
+            pubsub.close()
+    
+    return current_app.response_class(
+        generate(),
+        mimetype='text/event-stream',
+        headers={
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+            'X-Accel-Buffering': 'no'
+        }
+    )

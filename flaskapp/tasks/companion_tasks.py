@@ -3,6 +3,7 @@ from flask import current_app
 from datetime import datetime
 import google.generativeai as genai
 from celery import Celery
+import json
 
 # Initialize Gemini AI
 genai.configure(api_key=os.environ.get('GOOGLE_API_KEY'))
@@ -62,11 +63,18 @@ def register_tasks(celery_app):
             # Save both messages
             user.save_message(user_message, response.text, request_id, thread_id)
             
-            return {
+            # Publish the response to Redis
+            result = {
                 'success': True,
                 'response': response.text,
                 'request_id': request_id
             }
+            
+            redis_client = current_app.redis
+            channel = f"user:{user_id}:updates"
+            redis_client.publish(channel, json.dumps(result))
+            
+            return result
             
         except Exception as exc:
             current_app.logger.error(f"Error in process_companion_chat task: {str(exc)}")

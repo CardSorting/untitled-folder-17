@@ -1,7 +1,38 @@
 class ThreadManager {
     constructor() {
         this.messages = [];
+        this.eventSource = null;
+        this.setupEventSource();
         this.loadMessages();
+    }
+
+    setupEventSource() {
+        this.eventSource = new EventSource('/companion/stream');
+        
+        this.eventSource.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.success) {
+                // Remove any existing processing message
+                const processingMsg = document.querySelector('.processing-message');
+                if (processingMsg) {
+                    processingMsg.remove();
+                }
+                
+                // Add the actual response
+                this.addMessage({
+                    content: data.response,
+                    type: 'ai',
+                    timestamp: new Date()
+                });
+            }
+        };
+
+        this.eventSource.onerror = (error) => {
+            console.error('EventSource failed:', error);
+            this.eventSource.close();
+            // Attempt to reconnect after a delay
+            setTimeout(() => this.setupEventSource(), 5000);
+        };
     }
 
     loadMessages() {
@@ -55,7 +86,8 @@ class ThreadManager {
         if (!chatMessages) return;
 
         const messageDiv = document.createElement('div');
-        messageDiv.className = 'flex items-start ' + (message.type === 'user' ? 'justify-end' : '');
+        messageDiv.className = 'flex items-start ' + (message.type === 'user' ? 'justify-end' : '') + 
+                             (message.className ? ' ' + message.className : '');
         
         const content = `
             ${message.type === 'user' ? '' : `
@@ -122,41 +154,9 @@ class ThreadManager {
             const processingMessageDiv = this.addMessage({
                 content: 'Processing your message...',
                 type: 'ai',
-                timestamp: new Date()
+                timestamp: new Date(),
+                className: 'processing-message'
             });
-
-            // Poll for task completion
-            const checkTaskStatus = async () => {
-                const statusResponse = await fetch(`/companion/task-status/${data.task_id}`);
-                if (!statusResponse.ok) {
-                    throw new Error('Failed to check task status');
-                }
-                const statusData = await statusResponse.json();
-                
-                if (statusData.status === 'pending') {
-                    // Continue polling
-                    setTimeout(checkTaskStatus, 1000);
-                } else {
-                    // Remove the processing message
-                    if (processingMessageDiv) {
-                        processingMessageDiv.remove();
-                    }
-                    
-                    // Add the actual response
-                    if (statusData.success) {
-                        this.addMessage({
-                            content: statusData.response,
-                            type: 'ai',
-                            timestamp: new Date()
-                        });
-                    } else {
-                        throw new Error(statusData.error || 'Failed to process message');
-                    }
-                }
-            };
-
-            // Start polling
-            checkTaskStatus();
 
         } catch (error) {
             console.error('Error sending message:', error);
