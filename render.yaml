@@ -38,8 +38,7 @@ services:
         value: 1:982307418356:web:9ccb5775638f5fb40c2ea1
       # Firebase Admin SDK Configuration
       - key: FIREBASE_CREDENTIALS_JSON
-        sync: false
-        value: |
+        value: >-
           {
             "type": "service_account",
             "project_id": "irlmbm",
