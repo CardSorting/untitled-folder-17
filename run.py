@@ -1,6 +1,25 @@
+
+import subprocess
+import threading
 from flaskapp import create_app
 
-app = create_app()
+def start_celery_worker():
+    subprocess.run([
+        'celery', '-A', 'flaskapp.celery_app', 'worker',
+        '--loglevel=info', '--concurrency=1',
+        '--without-gossip', '--without-mingle',
+        '--without-heartbeat'
+    ])
+
+def run_app():
+    app = create_app()
+    app.run(host='0.0.0.0', port=5000, debug=True)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # Start Celery worker in a separate thread
+    celery_thread = threading.Thread(target=start_celery_worker)
+    celery_thread.daemon = True
+    celery_thread.start()
+    
+    # Run Flask app
+    run_app()
