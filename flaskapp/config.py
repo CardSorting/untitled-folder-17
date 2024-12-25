@@ -27,17 +27,16 @@ class Config:
     }
 
     # Firebase Admin SDK settings
-    if os.environ.get('FIREBASE_CREDENTIALS_JSON'):
-        FIREBASE_CREDENTIALS = json.loads(os.environ.get('FIREBASE_CREDENTIALS_JSON'))
-    else:
-        FIREBASE_CREDENTIALS_PATH = os.environ.get('FIREBASE_CREDENTIALS_PATH') or \
-            os.path.join(basedir, '..', 'cred', 'irlmbm-firebase-adminsdk-p4dxq-35e9808542.json')
+    FIREBASE_CREDENTIALS_PATH = os.environ.get('FIREBASE_CREDENTIALS_PATH') or \
+        os.path.join(basedir, '..', 'cred', 'irlmbm-firebase-adminsdk-p4dxq-35e9808542.json')
+    FIREBASE_CREDENTIALS = None
+    
+    if FIREBASE_CREDENTIALS_PATH and os.path.exists(FIREBASE_CREDENTIALS_PATH):
         try:
-            with open(FIREBASE_CREDENTIALS_PATH) as f:
+            with open(FIREBASE_CREDENTIALS_PATH, 'r') as f:
                 FIREBASE_CREDENTIALS = json.load(f)
         except Exception as e:
-            print(f"Warning: Could not load Firebase credentials: {e}")
-            FIREBASE_CREDENTIALS = {}
+            print(f"Error loading Firebase credentials from file: {e}")
 
     # Firebase Web SDK settings
     FIREBASE_API_KEY = os.environ.get('FIREBASE_API_KEY')
