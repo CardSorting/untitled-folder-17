@@ -102,15 +102,24 @@ def task_status(task_id):
 @companion_bp.route('/stream')
 @login_required
 def stream():
-    def generate_with_context():
-        with current_app.app_context():
-            pubsub = current_app.redis.pubsub()
-            pubsub.subscribe('chat_updates')
-            try:
-                for message in pubsub.listen():
-                    if message['type'] == 'message':
-                        yield f"data: {message['data'].decode()}\n\n"
-            finally:
-                pubsub.close()
-
-    return Response(generate_with_context(), mimetype='text/event-stream')
+    def generate():
+        pubsub = current_app.redis.pubsub()
+        channel = f"user:{current_user.firebase_uid}:updates"
+        pubsub.subscribe(channel)
+        try:
+            while True:
+                message = pubsub.get_message()
+                if message and message['type'] == 'message':
+                    yield f"data: {message['data'].decode()}\n\n"
+        finally:
+            pubsub.unsubscribe(channel)
+            pubsub.close()
+    
+    return Response(
+        generate(),
+        mimetype='text/event-stream',
+        headers={
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive'
+        }
+    )
