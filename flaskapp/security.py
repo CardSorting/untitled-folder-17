@@ -32,6 +32,8 @@ def set_security_headers():
             
             # Set security headers
             resp.headers['Content-Security-Policy'] = csp
+            resp.headers['Cross-Origin-Opener-Policy'] = 'same-origin-allow-popups'
+            resp.headers['Cross-Origin-Embedder-Policy'] = 'require-corp'
             resp.headers['X-Frame-Options'] = 'SAMEORIGIN'
             resp.headers['X-Content-Type-Options'] = 'nosniff'
             resp.headers['X-XSS-Protection'] = '1; mode=block'
