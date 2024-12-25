@@ -4,6 +4,7 @@ from .config import Config
 import os
 from redis import Redis
 from .firebase import init_firebase
+from datetime import datetime
 
 login_manager = LoginManager()
 
@@ -34,6 +35,11 @@ def create_app(config_class=Config):
     @app.context_processor
     def utility_processor():
         return dict(get_csp_nonce=lambda: getattr(request, 'csp_nonce', ''))
+
+    # Add template context processor for current datetime
+    @app.context_processor
+    def inject_now():
+        return {'now': datetime.utcnow()}
 
     # Add security headers
     @app.after_request
