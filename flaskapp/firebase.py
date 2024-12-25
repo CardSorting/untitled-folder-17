@@ -1,27 +1,47 @@
 import firebase_admin
 from firebase_admin import credentials, auth
 import json
+import os
 
 def init_firebase(app):
     """Initialize Firebase Admin SDK"""
     if not firebase_admin._apps:
         try:
-            # Try to get credentials from environment variable first
-            if app.config.get('FIREBASE_CREDENTIALS'):
-                cred_dict = app.config['FIREBASE_CREDENTIALS']
-                if isinstance(cred_dict, str):
-                    cred_dict = json.loads(cred_dict)
-                cred = credentials.Certificate(cred_dict)
-            else:
-                # Fallback to file
-                cred_path = app.config.get('FIREBASE_CREDENTIALS_PATH')
-                if not cred_path:
-                    raise ValueError("No Firebase credentials found in environment or file system")
-                cred = credentials.Certificate(cred_path)
+            # Try to get credentials from file path
+            cred_path = app.config.get('FIREBASE_CREDENTIALS_PATH')
+            if not cred_path:
+                raise ValueError("FIREBASE_CREDENTIALS_PATH not set in config")
             
-            firebase_admin.initialize_app(cred)
+            if not os.path.exists(cred_path):
+                raise FileNotFoundError(f"Firebase credentials file not found at {cred_path}")
+            
+            try:
+                with open(cred_path, 'r') as f:
+                    cred_json = json.load(f)
+                    print(f"Successfully loaded credentials from {cred_path}")
+            except json.JSONDecodeError as e:
+                print(f"Error parsing credentials JSON: {e}")
+                raise
+            except Exception as e:
+                print(f"Error reading credentials file: {e}")
+                raise
+            
+            try:
+                cred = credentials.Certificate(cred_json)
+                print("Successfully created Firebase credentials certificate")
+            except Exception as e:
+                print(f"Error creating Firebase credentials certificate: {e}")
+                raise
+            
+            try:
+                firebase_admin.initialize_app(cred)
+                print("Successfully initialized Firebase Admin SDK")
+            except Exception as e:
+                print(f"Error initializing Firebase Admin SDK: {e}")
+                raise
+            
         except Exception as e:
-            print(f"Warning: Failed to initialize Firebase Admin SDK: {e}")
+            print(f"Failed to initialize Firebase Admin SDK: {e}")
             # Continue without Firebase Admin SDK
             pass
 
@@ -31,8 +51,23 @@ def verify_firebase_token(id_token):
         if not firebase_admin._apps:
             print("Warning: Firebase Admin SDK not initialized")
             return None
-        decoded_token = auth.verify_id_token(id_token)
-        return decoded_token
+        
+        try:
+            decoded_token = auth.verify_id_token(id_token)
+            return decoded_token
+        except auth.InvalidIdTokenError as e:
+            print(f"Invalid ID token: {e}")
+            return None
+        except auth.ExpiredIdTokenError as e:
+            print(f"Expired ID token: {e}")
+            return None
+        except auth.RevokedIdTokenError as e:
+            print(f"Revoked ID token: {e}")
+            return None
+        except Exception as e:
+            print(f"Error verifying token: {e}")
+            return None
+            
     except Exception as e:
-        print(f"Error verifying token: {e}")
+        print(f"Error in verify_firebase_token: {e}")
         return None
