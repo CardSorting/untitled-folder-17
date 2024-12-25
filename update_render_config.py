@@ -10,12 +10,25 @@ with open('firebase-credentials.json', 'r') as f:
 with open('render.yaml', 'r') as f:
     render_config = yaml.safe_load(f)
 
-# Find the web service and update the file contents
+# Find the web service and update the secrets
 for service in render_config['services']:
     if service['type'] == 'web' and service['name'] == 'flask-app':
-        for file_config in service.get('files', []):
-            if file_config['name'] == 'firebase-credentials':
-                file_config['contents'] = json.dumps(firebase_creds, indent=2)
+        if 'secrets' not in service:
+            service['secrets'] = []
+        
+        # Find or create firebase-credentials secret
+        found = False
+        for secret in service.get('secrets', []):
+            if secret.get('key') == 'firebase-credentials':
+                secret['value'] = '${FIREBASE_CREDENTIALS_JSON}'
+                found = True
+                break
+        
+        if not found:
+            service['secrets'].append({
+                'key': 'firebase-credentials',
+                'value': '${FIREBASE_CREDENTIALS_JSON}'
+            })
 
 # Write the updated render.yaml
 with open('render.yaml', 'w') as f:
