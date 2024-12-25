@@ -13,24 +13,21 @@ def make_celery(app):
         result_backend=app.config['REDIS_URL'],
         broker_connection_retry=True,
         broker_connection_retry_on_startup=True,
-        broker_connection_max_retries=100,
-        broker_connection_timeout=30,
-        broker_heartbeat=None,
-        broker_pool_limit=None,
-        redis_max_connections=None,
+        broker_connection_max_retries=10,
+        broker_connection_timeout=10,
+        worker_prefetch_multiplier=1,
+        worker_concurrency=2,
         task_serializer='json',
         result_serializer='json',
         accept_content=['json'],
+        task_time_limit=300,
+        task_soft_time_limit=60,
+        worker_disable_rate_limits=True,
         broker_transport_options={
-            'visibility_timeout': 3600,  # 1 hour
-            'socket_timeout': 30,
-            'socket_connect_timeout': 30,
-            'socket_keepalive': True
-        },
-        redis_retry_on_timeout=True,
-        redis_socket_timeout=30,
-        redis_socket_connect_timeout=30,
-        redis_socket_keepalive=True
+            'visibility_timeout': 1800,
+            'socket_timeout': 10,
+            'socket_connect_timeout': 10
+        }
     )
     
     class ContextTask(celery.Task):
