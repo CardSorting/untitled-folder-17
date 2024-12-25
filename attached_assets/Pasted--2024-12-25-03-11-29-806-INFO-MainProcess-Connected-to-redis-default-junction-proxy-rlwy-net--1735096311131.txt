@@ -1,0 +1,26 @@
+[2024-12-25 03:11:29,806: INFO/MainProcess] Connected to redis://default:**@junction.proxy.rlwy.net:51904//
+[2024-12-25 03:11:30,514: INFO/MainProcess] mingle: searching for neighbors
+[2024-12-25 03:11:32,582: INFO/MainProcess] mingle: all alone
+[2024-12-25 03:11:34,293: INFO/MainProcess] celery@0331429f4304 ready.
+[2024-12-25 03:11:34,500: INFO/MainProcess] Task flaskapp.tasks.companion_tasks.process_companion_chat_task[014de47b-e945-403f-9e3b-e4db5c1b84ed] received
+[2024-12-25 03:11:34,637: INFO/MainProcess] Task flaskapp.tasks.companion_tasks.process_companion_chat_task[5ba0628d-77f2-45a9-be0f-bf5bcc230e88] received
+[2024-12-25 03:11:34,983: WARNING/ForkPoolWorker-8] /home/runner/workspace/flaskapp/models/user.py:116: UserWarning: Detected filter using positional arguments. Prefer using the 'filter' keyword argument instead.
+  messages_ref = messages_ref.where(field_path='thread_id', op_string='==', value=thread_id)
+
+[2024-12-25 03:11:35,142: WARNING/ForkPoolWorker-1] /home/runner/workspace/flaskapp/models/user.py:116: UserWarning: Detected filter using positional arguments. Prefer using the 'filter' keyword argument instead.
+  messages_ref = messages_ref.where(field_path='thread_id', op_string='==', value=thread_id)
+
+[2024-12-25 03:11:35,174: WARNING/ForkPoolWorker-8] Compute Engine Metadata server unavailable on attempt 1 of 3. Reason: Remote end closed connection without response
+[2024-12-25 03:11:35,289: WARNING/ForkPoolWorker-1] Compute Engine Metadata server unavailable on attempt 1 of 3. Reason: Remote end closed connection without response
+[2024-12-25 03:11:36,222: WARNING/ForkPoolWorker-8] Compute Engine Metadata server unavailable on attempt 2 of 3. Reason: Remote end closed connection without response
+[2024-12-25 03:11:36,331: WARNING/ForkPoolWorker-1] Compute Engine Metadata server unavailable on attempt 2 of 3. Reason: Remote end closed connection without response
+[2024-12-25 03:11:38,234: WARNING/ForkPoolWorker-8] Compute Engine Metadata server unavailable on attempt 3 of 3. Reason: Remote end closed connection without response
+[2024-12-25 03:11:38,236: WARNING/ForkPoolWorker-8] Compute Engine Metadata server unavailable on attempt 1 of 5. Reason: [Errno -2] Name or service not known
+[2024-12-25 03:11:38,326: WARNING/ForkPoolWorker-1] Compute Engine Metadata server unavailable on attempt 3 of 3. Reason: Remote end closed connection without response
+[2024-12-25 03:11:38,328: WARNING/ForkPoolWorker-1] Compute Engine Metadata server unavailable on attempt 1 of 5. Reason: [Errno -2] Name or service not known
+[2024-12-25 03:11:39,205: WARNING/ForkPoolWorker-8] Compute Engine Metadata server unavailable on attempt 2 of 5. Reason: [Errno -2] Name or service not known
+[2024-12-25 03:11:39,387: WARNING/ForkPoolWorker-1] Compute Engine Metadata server unavailable on attempt 2 of 5. Reason: [Errno -2] Name or service not known
+[2024-12-25 03:11:41,362: WARNING/ForkPoolWorker-8] Compute Engine Metadata server unavailable on attempt 3 of 5. Reason: [Errno -2] Name or service not known
+[2024-12-25 03:11:41,562: WARNING/ForkPoolWorker-1] Compute Engine Metadata server unavailable on attempt 3 of 5. Reason: [Errno -2] Name or service not known
+[2024-12-25 03:11:45,486: WARNING/ForkPoolWorker-8] Compute Engine Metadata server unavailable on attempt 4 of 5. Reason: [Errno -2] Name or service not known
+[2024-12-25 03:11:45,610: WARNING/ForkPoolWorker-1] Compute Engine Metadata server unavailable on attempt 4 of 5. Reason: [Errno -2] Name or service not known
