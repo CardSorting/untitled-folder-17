@@ -27,10 +27,10 @@ class Config:
     }
 
     # Firebase Admin SDK settings
-    FIREBASE_CREDENTIALS_PATH = os.environ.get('FIREBASE_CREDENTIALS_PATH')
+    FIREBASE_CREDENTIALS_PATH = None
     FIREBASE_CREDENTIALS = None
     
-    # Try to load Firebase credentials from environment variable first
+    # Try to load Firebase credentials from environment variable
     firebase_creds_str = os.environ.get('FIREBASE_CREDENTIALS_JSON')
     if firebase_creds_str:
         try:
