@@ -27,11 +27,19 @@ class Config:
     }
 
     # Firebase Admin SDK settings
-    FIREBASE_CREDENTIALS_PATH = os.environ.get('FIREBASE_CREDENTIALS_PATH') or \
-        os.path.join(basedir, '..', 'cred', 'irlmbm-firebase-adminsdk-p4dxq-35e9808542.json')
+    FIREBASE_CREDENTIALS_PATH = os.environ.get('FIREBASE_CREDENTIALS_PATH', '/etc/secrets/firebase-credentials.json')
     FIREBASE_CREDENTIALS = None
     
-    if FIREBASE_CREDENTIALS_PATH and os.path.exists(FIREBASE_CREDENTIALS_PATH):
+    # Try to load Firebase credentials from environment variable first
+    firebase_creds_str = os.environ.get('FIREBASE_CREDENTIALS_JSON')
+    if firebase_creds_str:
+        try:
+            FIREBASE_CREDENTIALS = json.loads(firebase_creds_str)
+        except json.JSONDecodeError as e:
+            print(f"Error parsing FIREBASE_CREDENTIALS_JSON: {e}")
+    
+    # If not in environment, try to load from file
+    if not FIREBASE_CREDENTIALS and FIREBASE_CREDENTIALS_PATH and os.path.exists(FIREBASE_CREDENTIALS_PATH):
         try:
             with open(FIREBASE_CREDENTIALS_PATH, 'r') as f:
                 FIREBASE_CREDENTIALS = json.load(f)
