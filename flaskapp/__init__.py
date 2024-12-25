@@ -35,55 +35,35 @@ def create_app(config_class=Config):
     def utility_processor():
         return dict(get_csp_nonce=lambda: getattr(request, 'csp_nonce', ''))
 
-    # Add Content Security Policy headers
+    # Add security headers
     @app.after_request
     def add_security_headers(response):
         nonce = getattr(request, 'csp_nonce', '')
+        firebase_domain = app.config.get('FIREBASE_AUTH_DOMAIN', 'irlmbm.firebaseapp.com')
         
-        csp = {
-            'default-src': ["'self'"],
-            'script-src': [
-                "'self'",
-                f"'nonce-{nonce}'",
-                "'unsafe-eval'",
-                "https://cdn.tailwindcss.com",
-                "https://www.gstatic.com",
-                "https://*.googleapis.com",
-                "https://apis.google.com"
-            ],
-            'style-src': [
-                "'self'",
-                "'unsafe-inline'",
-                "https://fonts.googleapis.com",
-                "https://cdn.tailwindcss.com"
-            ],
-            'font-src': [
-                "'self'",
-                "https://fonts.gstatic.com"
-            ],
-            'img-src': [
-                "'self'",
-                "data:",
-                "https:"
-            ],
-            'connect-src': [
-                "'self'",
-                "https://*.googleapis.com",
-                "https://identitytoolkit.googleapis.com",
-                "https://securetoken.googleapis.com"
-            ]
-        }
+        csp = '; '.join([
+            "default-src 'self'",
+            f"script-src 'self' 'nonce-{nonce}' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://*.firebaseio.com https://{firebase_domain} https://www.gstatic.com https://cdn.tailwindcss.com https://*.googleapis.com",
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+            "font-src 'self' https://fonts.gstatic.com",
+            f"frame-src 'self' https://{firebase_domain} https://accounts.google.com",
+            "img-src 'self' data: https: blob:",
+            f"connect-src 'self' https://*.googleapis.com https://{firebase_domain} https://identitytoolkit.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://securetoken.googleapis.com",
+            "media-src 'self' blob:",
+            "object-src 'none'"
+        ])
         
-        response.headers['Content-Security-Policy'] = '; '.join(
-            f"{key} {' '.join(values)}"
-            for key, values in csp.items()
-        )
-        
-        # Add other security headers
+        response.headers['Content-Security-Policy'] = csp
+        response.headers['X-Frame-Options'] = 'SAMEORIGIN'
         response.headers['X-Content-Type-Options'] = 'nosniff'
-        response.headers['X-Frame-Options'] = 'DENY'
         response.headers['X-XSS-Protection'] = '1; mode=block'
-        response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+        response.headers['Cross-Origin-Opener-Policy'] = 'same-origin-allow-popups'
+        
+        # CORS headers for Firebase
+        if request.method == 'OPTIONS':
+            response.headers['Access-Control-Allow-Origin'] = f'https://{firebase_domain}'
+            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
         
         return response
 
