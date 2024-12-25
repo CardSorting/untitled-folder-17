@@ -1,6 +1,6 @@
 import os
 import uuid
-from flask import Blueprint, render_template, request, jsonify, current_app, session
+from flask import Blueprint, render_template, request, jsonify, current_app, session, Response
 from flask_login import current_user, login_required
 import google.generativeai as genai
 from datetime import datetime
@@ -41,7 +41,7 @@ def chat():
         request_id = data.get('request_id', str(uuid.uuid4()))
         message_type = data.get('type', 'voice')
         thread_id = get_session_thread()
-        
+
         if not user_message:
             return jsonify({'error': 'No message provided', 'request_id': request_id}), 400
 
@@ -52,7 +52,7 @@ def chat():
         else:
             from ..tasks import process_companion_chat
             result = process_companion_chat.delay(user_message, current_user.firebase_uid, request_id, thread_id)
-        
+
         return jsonify({
             'success': True,
             'request_id': request_id,
@@ -74,11 +74,11 @@ def get_chat_history():
         limit = request.args.get('limit', default=50, type=int)
         thread_id = get_session_thread()
         messages = current_user.get_chat_history(limit=limit, thread_id=thread_id)
-        
+
         return jsonify({
             'messages': messages
         })
-        
+
     except Exception as e:
         current_app.logger.error(f"Error getting chat history: {str(e)}")
         return jsonify({'error': str(e)}), 500
@@ -88,7 +88,7 @@ def get_chat_history():
 def task_status(task_id):
     """Check the status of a Celery task."""
     from ..tasks import process_companion_chat
-    
+
     try:
         result = process_companion_chat.AsyncResult(task_id)
         if result.ready():
@@ -102,29 +102,15 @@ def task_status(task_id):
 @companion_bp.route('/stream')
 @login_required
 def stream():
-    """SSE endpoint for real-time updates."""
-    def generate():
-        pubsub = current_app.redis.pubsub()
-        channel = f"user:{current_user.firebase_uid}:updates"
-        pubsub.subscribe(channel)
-        
-        try:
-            while True:
-                message = pubsub.get_message()
-                if message and message['type'] == 'message':
-                    data = message['data'].decode('utf-8')
-                    yield f"data: {data}\n\n"
-                
-        finally:
-            pubsub.unsubscribe(channel)
-            pubsub.close()
-    
-    return current_app.response_class(
-        generate(),
-        mimetype='text/event-stream',
-        headers={
-            'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive',
-            'X-Accel-Buffering': 'no'
-        }
-    )
+    def generate_with_context():
+        with current_app.app_context():
+            pubsub = current_app.redis.pubsub()
+            pubsub.subscribe('chat_updates')
+            try:
+                for message in pubsub.listen():
+                    if message['type'] == 'message':
+                        yield f"data: {message['data'].decode()}\n\n"
+            finally:
+                pubsub.close()
+
+    return Response(generate_with_context(), mimetype='text/event-stream')
