@@ -1,3 +1,4 @@
+
 from celery import Celery
 from . import create_app
 
@@ -7,16 +8,15 @@ def make_celery(app):
         broker=app.config['CELERY_BROKER_URL']
     )
     
-    # Configure Celery with robust Redis settings
     celery.conf.update(
         broker_url=app.config['CELERY_BROKER_URL'],
         result_backend=app.config['REDIS_URL'],
         broker_connection_retry=True,
         broker_connection_retry_on_startup=True,
-        broker_connection_max_retries=10,
-        broker_connection_timeout=10,
+        broker_connection_max_retries=3,
+        broker_connection_timeout=5,
         worker_prefetch_multiplier=1,
-        worker_concurrency=2,
+        worker_concurrency=1,
         task_serializer='json',
         result_serializer='json',
         accept_content=['json'],
@@ -25,8 +25,8 @@ def make_celery(app):
         worker_disable_rate_limits=True,
         broker_transport_options={
             'visibility_timeout': 1800,
-            'socket_timeout': 10,
-            'socket_connect_timeout': 10
+            'socket_timeout': 5,
+            'socket_connect_timeout': 5
         }
     )
     
@@ -41,6 +41,5 @@ def make_celery(app):
 flask_app = create_app()
 celery = make_celery(flask_app)
 
-# Import tasks to register them
 from .tasks import companion_tasks
 companion_tasks.register_tasks(celery)
