@@ -17,6 +17,7 @@ def create_app(config_class=Config):
     app = Flask(__name__, 
                 static_folder=os.path.join(os.path.dirname(__file__), 'static'),
                 template_folder=os.path.join(os.path.dirname(__file__), 'templates'))
+    app.config['SERVER_NAME'] = None
     app.config.from_object(config_class)
 
     # Initialize Flask-Login
