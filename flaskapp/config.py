@@ -27,7 +27,7 @@ class Config:
     }
 
     # Firebase Admin SDK settings
-    FIREBASE_CREDENTIALS_PATH = os.environ.get('FIREBASE_CREDENTIALS_PATH', '/etc/secrets/firebase-credentials.json')
+    FIREBASE_CREDENTIALS_PATH = os.environ.get('FIREBASE_CREDENTIALS_PATH')
     FIREBASE_CREDENTIALS = None
     
     # Try to load Firebase credentials from environment variable first
