@@ -1,52 +1,52 @@
 services:
-- type: web
-  name: flask-app
-  env: python
-  plan: free
-  buildCommand: pip install -r requirements.txt
-  startCommand: 'celery -A flaskapp.celery_app worker --loglevel=info --concurrency=1
-    &
+  # Web Service
+  - type: web
+    name: flask-app
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: |
+      celery -A flaskapp.celery_app worker --loglevel=info --concurrency=1 &
+      gunicorn "flaskapp:create_app()" --config gunicorn.conf.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: SECRET_KEY
+        generateValue: true
+      - key: REDIS_URL
+        fromService:
+          name: flask-redis
+          type: redis
+          property: connectionString
+      - key: CHAT_REDIS_URL
+        fromService:
+          name: flask-redis
+          type: redis
+          property: connectionString
+      # Firebase Web SDK Configuration
+      - key: FIREBASE_API_KEY
+        value: AIzaSyD3DQtGspj3lNugVxx7y1_9xp6jHSbObho
+      - key: FIREBASE_AUTH_DOMAIN
+        value: irlmbm.firebaseapp.com
+      - key: FIREBASE_PROJECT_ID
+        value: irlmbm
+      - key: FIREBASE_STORAGE_BUCKET
+        value: irlmbm.appspot.com
+      - key: FIREBASE_MESSAGING_SENDER_ID
+        value: 982307418356
+      - key: FIREBASE_APP_ID
+        value: 1:982307418356:web:9ccb5775638f5fb40c2ea1
+      # Firebase Admin SDK Configuration
+      - key: FIREBASE_CREDENTIALS_PATH
+        value: /etc/secrets/firebase-credentials.json
+      # Google AI Configuration
+      - key: GOOGLE_API_KEY
+        value: AIzaSyCFDHM6Gti_sKFaPHkEAcYz5pp5T2b4OWs
 
-    gunicorn "flaskapp:create_app()" --config gunicorn.conf.py
-
-    '
-  envVars:
-  - key: PYTHON_VERSION
-    value: 3.11.0
-  - key: SECRET_KEY
-    generateValue: true
-  - key: REDIS_URL
-    fromService:
-      name: flask-redis
-      type: redis
-      property: connectionString
-  - key: CHAT_REDIS_URL
-    fromService:
-      name: flask-redis
-      type: redis
-      property: connectionString
-  - key: FIREBASE_API_KEY
-    value: AIzaSyD3DQtGspj3lNugVxx7y1_9xp6jHSbObho
-  - key: FIREBASE_AUTH_DOMAIN
-    value: irlmbm.firebaseapp.com
-  - key: FIREBASE_PROJECT_ID
-    value: irlmbm
-  - key: FIREBASE_STORAGE_BUCKET
-    value: irlmbm.appspot.com
-  - key: FIREBASE_MESSAGING_SENDER_ID
-    value: 982307418356
-  - key: FIREBASE_APP_ID
-    value: 1:982307418356:web:9ccb5775638f5fb40c2ea1
-  - key: FIREBASE_CREDENTIALS_PATH
-    value: /etc/secrets/firebase-credentials.json
-  - key: GOOGLE_API_KEY
-    value: AIzaSyCFDHM6Gti_sKFaPHkEAcYz5pp5T2b4OWs
-  secrets:
-  - key: firebase-credentials
-    value: ${FIREBASE_CREDENTIALS_JSON}
-- type: redis
-  name: flask-redis
-  ipAllowList:
-  - source: 0.0.0.0/0
-    description: everywhere
-  plan: free
+  # Redis instance
+  - type: redis
+    name: flask-redis
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: everywhere
+    plan: free
